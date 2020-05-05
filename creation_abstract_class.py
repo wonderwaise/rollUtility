@@ -3,17 +3,6 @@ from tkinter.messagebox import *
 # Name check, no repeats
 
 
-def outer(database, number):
-    def decorator(method):
-        def wrapper(*args):
-            if len(database) > number - 1:
-                showerror('Error', 'Parameter Limit!')
-                return
-            else:
-                method(*args)
-        return wrapper
-    return decorator
-
 class AskWindowSample(Toplevel):
     def __init__(self, parent, title, geometry, maxparameters=None):
         Toplevel.__init__(self, parent)
