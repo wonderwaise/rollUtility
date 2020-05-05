@@ -1,6 +1,18 @@
 from tkinter import *
 from tkinter.messagebox import *
+# Name check, no repeats
 
+
+def outer(database, number):
+    def decorator(method):
+        def wrapper(*args):
+            if len(database) > number - 1:
+                showerror('Error', 'Parameter Limit!')
+                return
+            else:
+                method(*args)
+        return wrapper
+    return decorator
 
 class AskWindowSample(Toplevel):
     def __init__(self, parent, title, geometry, maxparameters=None):
@@ -31,10 +43,6 @@ class AskWindowSample(Toplevel):
         b.pack(expand=1)
 
     def create_ask_parameter_window(self):
-        print(len(self.vars))
-        if len(self.vars) > self.maxparams - 1:
-            showerror('Error', 'Parameter Limit!')
-            return
         self.win = Toplevel(self)
         self.win.title('New Parameter')
         self.win.grab_set()

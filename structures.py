@@ -74,13 +74,11 @@ class Profile:
         for parameter in ['Name', 'Description', 'Given by', 'Award']:
             add_quest_window.create_parameter_field(parameter)
         add_quest_window.wait_window()
-        for element in add_quest_window.box:
-            if not add_quest_window.box[element]:
-                break
-        else:
+        try:
             result = add_quest_window.box
-            print(result)
             self.quests.append(Quest(result['Description'], result['Given by'], result['Award'], result['Name']))
+        except KeyError:
+            pass
 
 
     def add_achieve(self, achievement: Achievement):
