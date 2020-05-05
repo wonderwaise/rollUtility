@@ -1,13 +1,13 @@
 from tkinter import *
 from tkinter.messagebox import *
-# Name check, no repeats
 
 
 class AskWindowSample(Toplevel):
-    def __init__(self, parent, title, geometry, maxparameters=None):
+    def __init__(self, parent, title, geometry, forbidden: list, maxparameters=999):
         Toplevel.__init__(self, parent)
         self.maxparams = maxparameters
         self.grab_set()
+        self.forbidden_parameters = forbidden
         self.title(title)
         self.geometry(geometry)
         self.box = {}
@@ -50,28 +50,44 @@ class AskWindowSample(Toplevel):
         data = field.get()
         if data:
             self.win.destroy()
-            self.create_parameter_field(data)
+            self.create_parameter_field(data, str)
         else:
             showerror('Error', 'Invalid Parameter Name')
 
-    def create_parameter_field(self, parameter_name):
+    def create_parameter_field(self, parameter_name, valuetype: type):
         var = StringVar()
         row = Frame(self.container)
         row.pack(pady=5)
         Label(row, text=parameter_name.title(), font=("Times New Roman", 20, 'bold'), width=10).pack(side=LEFT)
         Entry(row, textvariable=var, width=20).pack(side=LEFT, padx=5)
-        self.vars[parameter_name] = var
+        self.vars[parameter_name] = {'var': var, 'type': valuetype}
+        self.box[parameter_name] = None
 
-    def check_empty_fields(self):
+    def check_fields(self):
         for field in self.vars:
-            if not self.vars[field].get():
+            if self.vars[field]['var'].get():
+                right_value = self.check_type(self.vars[field]['var'].get(), self.vars[field]['type'])
+                if not right_value:
+                    showerror('Error', f'{field} has invalid value!')
+                    return
+            else:
                 showerror('Error', f'{field} has got empty value!')
-                break
+                return
         else:
             return 1
 
+    @staticmethod
+    def check_type(target, valuetype):
+        print(target, valuetype, '***')
+        try:
+            x = valuetype(target)
+        except ValueError:
+            pass
+        else:
+            return x
+
     def end_process(self):
-        if self.check_empty_fields():
+        if self.check_fields():
             showinfo('Success', 'Success')
-            self.box = {x: self.vars[x].get() for x in self.vars}
+            self.box = {x: self.vars[x]['var'].get() for x in self.vars}
             self.destroy()

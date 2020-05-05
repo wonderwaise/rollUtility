@@ -2,7 +2,7 @@ from creation_abstract_class import AskWindowSample
 
 
 class Inventory:
-    def __init__(self, name, space: int):
+    def __init__(self, name, space: int = 99999):
         # Название хранилища
         self.name = name
         self.space: int = space
@@ -70,16 +70,15 @@ class Profile:
                 self.stats[key] = anotherstats[key]
 
     def add_quest(self, parent):
-        add_quest_window = AskWindowSample(parent, 'New Quest', '400x700', 4)
+        add_quest_window = AskWindowSample(parent, 'New Quest', '400x700', [], 4)
         for parameter in ['Name', 'Description', 'Given by', 'Award']:
-            add_quest_window.create_parameter_field(parameter)
+            add_quest_window.create_parameter_field(parameter, str)
         add_quest_window.wait_window()
         try:
             result = add_quest_window.box
             self.quests.append(Quest(result['Description'], result['Given by'], result['Award'], result['Name']))
         except KeyError:
             pass
-
 
     def add_achieve(self, achievement: Achievement):
         self.quests.append(achievement)

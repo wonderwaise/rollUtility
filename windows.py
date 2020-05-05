@@ -37,7 +37,7 @@ class MainWindow(Tk):
                                         relief=SOLID, font=('Times New Roman', 40, 'bold'),
                                         command=lambda i=profile: ProfileWindow(i))
                 profile_button.pack(fill=X, pady=5)
-                self.profile_name_buttons[profile.name] = profile_button
+                self.profile_name_buttons[profile.name.title()] = profile_button
 
     def get_new_profile_name(self):
         win = Toplevel(self)
@@ -56,21 +56,34 @@ class MainWindow(Tk):
     def profile_name_check(self, field, window):
         name = field.get()
         if len(name) > 2:
-            if name.title() in profile_names:
+            print(name.title(), self.profile_name_buttons)
+            if name.title() in self.profile_name_buttons:
                 showerror('Profile Exists', f'[{name}] already exists. Please choose another profile name')
                 return
             window.destroy()
-            add_profile_window = AskWindowSample(self, 'New Profile', '400x700')
-            add_profile_window.wait_window()
+            self.create_profile(name)
         else:
             showerror('Invalid Profile Name', 'Profile Name should have 2 symbols minimum')
+
+    def create_profile(self, name):
+        add_profile_window = AskWindowSample(self, 'New Profile', '400x700', ['Name'])
+        add_profile_window.create_parameter_field('Space', int)
+        add_profile_window.wait_window()
+        for field in add_profile_window.box:
+            if not add_profile_window.box[field]:
+                return
+        inv = Inventory('root', int(add_profile_window.box.pop('Space')))
+        abcv = Inventory('abstract root')
+        p = Profile(name.title(), inv, abcv, **add_profile_window.box)
+        PROFILES.append(p)
+        Database.save(PROFILES)
+        self.refresh_profile_buttons()
 
     def delete_profile(self, window, profile):
         if askyesno('Verify', f'Do you really want to delete {profile.name} profile'):
             window.destroy()
             PROFILES.remove(profile)
-            self.profile_name_buttons[profile.name].destroy()
-            del self.profile_name_buttons[profile.name]
+            self.profile_name_buttons.pop(profile.name).destroy()
             Database.save(PROFILES)
             showinfo('Success!', f'Profile: {profile.name} has been successfully deleted!')
 
