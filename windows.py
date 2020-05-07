@@ -4,8 +4,8 @@ from pickle_tools import Database
 from structures import *
 
 DATABASE = Database.load()
-print(DATABASE['items'].inventory)
 profile_names = [x.name for x in DATABASE['profiles']]
+item_names = [x.name for x in DATABASE['items'].inventory]
 # Profile window class >>> remake field spawning => aside spawn first to evade disappear
 # Base parameters such as weight and so on
 # Abstract class for creation windows and Concrete classes for create profile, items, quests, etc.
@@ -95,7 +95,6 @@ class MainWindow(Tk):
 
     def create_item(self):
         add_item_window = NewItemWindow(self)
-        add_item_window.create_item_object()
         Database.save(DATABASE)
 
     def delete_profile(self, window, profile):
@@ -115,7 +114,7 @@ class ItemsList(Toplevel):
         self.geometry('300x500')
         self.list = Listbox(self, relief=SOLID, selectmode=SINGLE)
         self.scroller = Scrollbar(self, command=self.list.yview)
-        self.list.config(yscrollcommand=self.scroller.set)
+        self.list.config(yscrollcommand=self.scroller.set, font=('Arial', 20, 'normal'))
         self.scroller.pack(side=RIGHT, fill=Y)
         self.list.pack(expand=1, fill=BOTH)
         self.fill_list()
@@ -127,14 +126,18 @@ class ItemsList(Toplevel):
 
     def on_click(self):
         index = self.list.curselection()[0]
-        item = DATABASE['items'].inventory[index]
-        ItemInfo(self, item)
+        try:
+            item = DATABASE['items'].inventory[index]
+        except KeyError:
+            showinfo('Info', 'Maybe this item was deleted. I cant open its info')
+            self.list.delete(index)
+        else:
+            ItemInfo(self, item)
 
 
 class ItemInfo(Toplevel):
     def __init__(self, parent, item: Item):
         Toplevel.__init__(self, parent)
-        self.geometry('350x500')
         self.title(f'Info about: {item.name}')
         self.item = item
         top_frame = Frame(self)
@@ -142,11 +145,14 @@ class ItemInfo(Toplevel):
         for attr in [item.name, f'Weight: {item.weight}']:
             Label(top_frame, text=attr, font=('Times New Roman', 20, 'bold')).pack(side=LEFT, padx=15, expand=1)
 
-        self.canvas = Canvas(self, width=306)
+
+        self.canvas = Canvas(self, width=350)
         self.parameters_frame = Frame(self.canvas)
         self.scroller = Scrollbar(self, command=self.canvas.yview)
         self.canvas_setting()
         self.scroller.pack(side=RIGHT, fill=Y)
+        Button(self, text='Delete Item',
+               command=lambda: self.delete_item(parent)).pack(side=RIGHT, pady=10, padx=10, anchor=N)
         self.canvas.pack(fill=Y, expand=1)
         self.iterate_parameters()
 
@@ -164,10 +170,16 @@ class ItemInfo(Toplevel):
 
     @staticmethod
     def accommodate_parameter(row, name, value, master):
-        Label(master, text=name, width=15, relief=SOLID,
-              font=('Times New Roman', 15, 'bold')).grid(row=row, sticky=W)
-        Label(master, text=value, width=15, relief=SOLID,
+        Label(master, text=name, width=15, height=2, relief=SOLID,
+              font=('Times New Roman', 15, 'normal')).grid(row=row, sticky=W)
+        Label(master, text=value, width=15, height=2, relief=SOLID,
               font=('Times New Roman', 15, 'normal')).grid(row=row, column=1)
+
+    def delete_item(self, parent):
+        if askyesno('Verify', f'Do you really want to delete [{self.item.name}]?'):
+            DATABASE['items'].inventory.remove(self.item)
+            Database.save(DATABASE)
+            parent.destroy()
 
 
 class NewItemWindow(AskWindowSample):
@@ -176,7 +188,7 @@ class NewItemWindow(AskWindowSample):
         self.create_parameter_field('Item name', str)
         self.create_parameter_field('Item weight', int)
         self.wait_window()
-        self.check_box()
+        self.create_item_object()
 
     def check_box(self):
         for key in self.box:
@@ -185,9 +197,13 @@ class NewItemWindow(AskWindowSample):
         return 1
 
     def create_item_object(self):
-        name = self.box.pop('Item name')
-        weight = self.box.pop('Item weight')
-        DATABASE['items'].put(Item(name, weight, **self.box))
+        if self.check_box():
+            name = self.box.pop('Item name')
+            if name in item_names:
+                showerror('Error', f'Item with name {name} already exists!')
+                return
+            weight = self.box.pop('Item weight')
+            DATABASE['items'].put(Item(name, weight, **self.box))
 
 
 # -----------------------------------------------------------------------
@@ -331,8 +347,6 @@ class AchievementsWindow(Toplevel, Provider):
         self.geometry('700x400')
         self.focus_set()
         self.grab_set()
-
-
 
 
 root = MainWindow()

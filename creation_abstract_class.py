@@ -47,12 +47,17 @@ class AskWindowSample(Toplevel):
         Button(f, text="Confirm", command=lambda: self.check_parameter_name_value(var)).pack(expand=1)
 
     def check_parameter_name_value(self, field):
-        data = field.get()
+        data = field.get().title()
         if data:
             if data in self.forbidden_parameters:
                 showerror('Error', 'Forbidden Parameter!')
+                return
+            elif data in self.vars:
+                showerror('Error', 'Existing parameter name')
+                return
             self.win.destroy()
             self.create_parameter_field(data, str)
+
         else:
             showerror('Error', 'Invalid Parameter Name')
 
@@ -60,7 +65,7 @@ class AskWindowSample(Toplevel):
         var = StringVar()
         row = Frame(self.container)
         row.pack(pady=5)
-        Label(row, text=parameter_name.title(), font=("Times New Roman", 20, 'bold'), width=10).pack(side=LEFT)
+        Label(row, text=parameter_name, font=("Times New Roman", 20, 'bold'), width=10).pack(side=LEFT)
         Entry(row, textvariable=var, width=20).pack(side=LEFT, padx=5)
         self.vars[parameter_name] = {'var': var, 'type': valuetype}
         self.box[parameter_name] = None
