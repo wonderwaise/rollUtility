@@ -112,6 +112,9 @@ class ItemsList(Toplevel):
         self.grab_set()
         self.title('Items')
         self.geometry('300x500')
+        self.create_list()
+
+    def create_list(self):
         self.list = Listbox(self, relief=SOLID, selectmode=SINGLE)
         self.scroller = Scrollbar(self, command=self.list.yview)
         self.list.config(yscrollcommand=self.scroller.set, font=('Arial', 20, 'normal'))
@@ -119,6 +122,14 @@ class ItemsList(Toplevel):
         self.list.pack(expand=1, fill=BOTH)
         self.fill_list()
         self.list.bind('<Double-1>', lambda event: self.on_click())
+
+    def delete_item(self, child, item):
+        DATABASE['items'].inventory.remove(item)
+        Database.save(DATABASE)
+        child.destroy()
+        self.list.destroy()
+        self.scroller.destroy()
+        self.create_list()
 
     def fill_list(self):
         for item in DATABASE['items'].inventory:
@@ -142,9 +153,9 @@ class ItemInfo(Toplevel):
         self.item = item
         top_frame = Frame(self)
         top_frame.pack(fill=X)
+
         for attr in [item.name, f'Weight: {item.weight}']:
             Label(top_frame, text=attr, font=('Times New Roman', 20, 'bold')).pack(side=LEFT, padx=15, expand=1)
-
 
         self.canvas = Canvas(self, width=350)
         self.parameters_frame = Frame(self.canvas)
@@ -152,7 +163,7 @@ class ItemInfo(Toplevel):
         self.canvas_setting()
         self.scroller.pack(side=RIGHT, fill=Y)
         Button(self, text='Delete Item',
-               command=lambda: self.delete_item(parent)).pack(side=RIGHT, pady=10, padx=10, anchor=N)
+               command=lambda: parent.delete_item(self, self.item)).pack(side=RIGHT, pady=10, padx=10, anchor=N)
         self.canvas.pack(fill=Y, expand=1)
         self.iterate_parameters()
 

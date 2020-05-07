@@ -57,11 +57,10 @@ class AskWindowSample(Toplevel):
                 return
             self.win.destroy()
             self.create_parameter_field(data, str)
-
         else:
             showerror('Error', 'Invalid Parameter Name')
 
-    def create_parameter_field(self, parameter_name, valuetype: type):
+    def create_parameter_field(self, parameter_name, valuetype: type, value=''):
         var = StringVar()
         row = Frame(self.container)
         row.pack(pady=5)
@@ -95,6 +94,5 @@ class AskWindowSample(Toplevel):
 
     def end_process(self):
         if self.check_fields():
-            showinfo('Success', 'Success')
             self.box = {x: self.vars[x]['var'].get() for x in self.vars}
             self.destroy()
