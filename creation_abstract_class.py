@@ -49,6 +49,8 @@ class AskWindowSample(Toplevel):
     def check_parameter_name_value(self, field):
         data = field.get()
         if data:
+            if data in self.forbidden_parameters:
+                showerror('Error', 'Forbidden Parameter!')
             self.win.destroy()
             self.create_parameter_field(data, str)
         else:

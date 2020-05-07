@@ -10,6 +10,9 @@ class Inventory:
         self.weight = 0
 
     def put(self, item):
+        if self.name == 'MAIN':
+            self.inventory.append(item)
+            return
         if self.weight + item.weight <= self.space:
             self.inventory.append(item)
 
@@ -24,26 +27,15 @@ class Quest:
 
 # abstract class
 class Item:
-    def __init__(self, name, place: Inventory, weight: int):
+    def __init__(self, name, weight: int, *changeable, **stats):
         self.name = name
-        self.place = place
         self.weight = weight
-
-
-class AbstractItem(Item):
-    def __init__(self, name, place, weight, description, *changeable, **stats):
-        super().__init__(name, place, weight)
-        self.change = changeable
-        self.desc = description
+        self.changeable = changeable
         self.stats = stats
 
+    def __str__(self):
+        return self.name
 
-class NonAbstractItem(Item):
-    def __init__(self, name, place, weight, description, *changeable, **stats):
-        super().__init__(name, place, weight)
-        self.desc = description
-        self.change = changeable
-        self.stats = stats
 
 
 class Achievement:
@@ -69,6 +61,7 @@ class Profile:
             for key in anotherstats:
                 self.stats[key] = anotherstats[key]
 
+    # REWORK ++++++++ FOR LOOP IN
     def add_quest(self, parent):
         add_quest_window = AskWindowSample(parent, 'New Quest', '400x700', [], 4)
         for parameter in ['Name', 'Description', 'Given by', 'Award']:
