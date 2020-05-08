@@ -65,16 +65,6 @@ class Profile:
                 self.stats[key] = anotherstats[key]
 
     # REWORK ++++++++ FOR LOOP IN
-    def add_quest(self, parent):
-        add_quest_window = AskWindowSample(parent, 'New Quest', '400x700', [], 4)
-        for parameter in ['Name', 'Description', 'Given by', 'Award']:
-            add_quest_window.create_text_parameter_field(parameter, str)
-        add_quest_window.wait_window()
-        try:
-            result = add_quest_window.result
-            self.quests.append(Quest(result['Description'], result['Given by'], result['Award'], result['Name']))
-        except KeyError:
-            pass
 
     def add_achieve(self, achievement: Achievement):
         self.quests.append(achievement)

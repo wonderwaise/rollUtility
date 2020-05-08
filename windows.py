@@ -80,7 +80,7 @@ class MainWindow(Tk):
 
     def create_profile(self, name):
         add_profile_window = AskWindowSample(self, 'New Profile', '400x700', ['Name'])
-        add_profile_window.create_text_parameter_field('Space', int)
+        add_profile_window.create_entry_parameter_field('Space', int)
         add_profile_window.wait_window()
         for field in add_profile_window.result:
             if not add_profile_window.result[field]:
@@ -163,8 +163,8 @@ class ItemInfo(DisplayWindow):
 class NewItemWindow(AskWindowSample):
     def __init__(self, parent=None):
         super().__init__(parent, 'New Item', '400x700', [])
-        self.create_text_parameter_field('Item name', str)
-        self.create_text_parameter_field('Item weight', int)
+        self.create_entry_parameter_field('Item name', str)
+        self.create_entry_parameter_field('Item weight', int)
         self.wait_window()
         self.create_item_object()
 
@@ -229,9 +229,17 @@ class QuestsWindow(DisplayWindow, Provider):
         Button(self.aside, text='Add Quest', height=3, width=15, command=self.add_quest).pack(padx=10, pady=10)
 
     def add_quest(self):
-        self.profile.add_quest(self)
-        Database.save(DATABASE)
-        self.post_quests()
+        add_quest_window = AskWindowSample(self, 'New Quest', 'auto', [], 4)
+        add_quest_window.create_entry_parameter_field('Name', str)
+        add_quest_window.create_text_parameter_field('Description')
+        add_quest_window.create_combobox_parameter_field('Given by', ['NPC 1', 'NPC 2', 'NPC 3'])
+        add_quest_window.create_text_parameter_field('Award')
+        add_quest_window.wait_window()
+        result = add_quest_window.result
+        for key in result:
+            if not result[key]:
+                return 0
+        self.profile.quests.append(Quest(result['Description'], result['Given by'], result['Award'], result['Name']))
 
     def create_quest_environment(self, q):
         # self.frame_inside = master frame

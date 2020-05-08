@@ -33,6 +33,9 @@ class AskWindowSample(AbstractWindow):
         Button(zone, text="Confirm", width=25, height=2, command=self.end_process).pack(expand=1, pady=10)
 
     def create_ask_parameter_window(self):
+        if self.maxparams < len(self.vars) + 1:
+            showerror('Error', 'Parameter Limit!')
+            return
         self.win = Toplevel(self)
         self.win.title('New Parameter')
         self.win.grab_set()
@@ -58,28 +61,38 @@ class AskWindowSample(AbstractWindow):
                 showerror('Error', 'Existing parameter name')
                 return
             self.win.destroy()
-            self.create_text_parameter_field(data, str)
+            self.create_entry_parameter_field(data, str)
         else:
             showerror('Error', 'Invalid Parameter Name')
 
-    def create_text_parameter_field(self, parameter_name, valuetype: type):
-        var = StringVar()
-        Label(self.parameter_frame, text=parameter_name, font=("Times New Roman", 20, 'bold'), width=15).grid(row=self.rows, column=0)
-        Entry(self.parameter_frame, textvariable=var, width=20).grid(row=self.rows, column=1)
+    def create_parameter_field(self, parameter_name, var, valuetype: type):
+        Label(self.parameter_frame, text=parameter_name, relief=SOLID,
+              font=("Times New Roman", 20, 'bold'), width=12).grid(row=self.rows, column=0, sticky=N+S)
         self.rows += 1
         self.vars[parameter_name] = {'var': var, 'type': valuetype}
         self.result[parameter_name] = None
 
+    def create_entry_parameter_field(self, parameter_name, valuetype: type):
+        var = StringVar()
+        Entry(self.parameter_frame, textvariable=var, width=40).grid(row=self.rows, column=1, sticky=N+S)
+        self.create_parameter_field(parameter_name, var, valuetype)
+
     def create_combobox_parameter_field(self, parameter_name, iterable):
         var = StringVar()
-        Label(self.parameter_frame, text=parameter_name, font=('Times New Roman', 20, 'bold'), width=15).grid(row=self.rows, column=0)
-        Combobox(self.parameter_frame, textvariable=var, width=15, values=iterable).grid(row=self.rows, column=1)
-        self.rows += 1
-        self.vars[parameter_name] = {'var': var, 'type': str}
-        self.result[parameter_name] = None
+        Combobox(self.parameter_frame, textvariable=var, width=35, values=iterable).grid(row=self.rows, column=1, sticky=N+S)
+        self.create_parameter_field(parameter_name, var, str)
+
+    def create_text_parameter_field(self, parameter_name):
+        text = Text(self.parameter_frame, width=30, height=5)
+        text.grid(row=self.rows, column=1)
+        self.create_parameter_field(parameter_name, text, str)
 
     def check_fields(self):
         for field in self.vars:
+            if isinstance(self.vars[field]['var'], Text):
+                if self.vars[field]['var'].get('1.0', END+'-1c'):
+                    continue
+                showerror('Error', f'{field} has empty value!')
             if self.vars[field]['var'].get():
                 right_value = self.check_type(self.vars[field]['var'].get(), self.vars[field]['type'])
                 if not right_value:
