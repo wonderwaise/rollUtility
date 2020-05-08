@@ -48,7 +48,7 @@ class MainWindow(Tk):
             if profile.name not in self.profile_name_buttons:
                 profile_button = Button(self.core_bar, text=profile.name.title(),
                                         relief=SOLID, font=('Times New Roman', 40, 'bold'),
-                                        command=lambda i=profile: ProfileWindow(i))
+                                        command=lambda i=profile: ProfileWindow(self, i))
                 profile_button.pack(fill=X, pady=5)
                 self.profile_name_buttons[profile.name.title()] = profile_button
 
@@ -93,7 +93,7 @@ class MainWindow(Tk):
         self.refresh_profile_buttons()
 
     def create_item(self):
-        add_item_window = NewItemWindow(self)
+        NewItemWindow(self)
         Database.save(DATABASE)
 
     def delete_profile(self, window, profile):
@@ -218,32 +218,15 @@ class Provider:
         self.profile = instance
 
 
-class ProfileWindow(Toplevel):
-    def __init__(self, profile):
-        Toplevel.__init__(self, root)
-        self.profile = profile
-        self.title(f'Profile: {self.profile.name}')
-        self.geometry('400x700')
-        self.grab_set()
-
-        self.core_frame = Frame(self)
-        self.core_frame.pack(side=LEFT, fill=Y, padx=5, pady=10, expand=1)
+class ProfileWindow(DisplayWindow):
+    def __init__(self, parent, profile):
+        DisplayWindow.__init__(self, parent, f' Profile: {profile.name}', 'auto',
+                               profile.name, f'Space: {profile.inventory.space}', True, **profile.stats)
         self.aside_frame = Frame(self)
-        self.aside_frame.pack(side=LEFT, fill=Y, padx=8, pady=10)
+        self.aside_frame.pack(side=RIGHT, fill=Y, padx=8, pady=10, anchor=NE)
+        self.profile = profile
 
-        self.left_core_frame = Frame(self.core_frame)
-        self.left_core_frame.pack(side=LEFT, fill=Y, padx=2, expand=1)
-        self.right_core_frame = Frame(self.core_frame)
-        self.right_core_frame.pack(side=LEFT, fill=Y, padx=2, expand=1)
-
-        self.construct()
         self.create_aside_menu()
-
-    def construct(self):
-        for parameter in self.profile.stats:
-            Label(self.left_core_frame, text=f'{parameter}:', font=('Arial', 20, 'bold')).pack(fill=X, padx=35)
-            Label(self.right_core_frame, text=self.profile.stats[parameter],
-                  font=('Arial', 20, 'normal')).pack(fill=X, padx=35)
 
     def create_aside_menu(self):
         samples = {
@@ -253,10 +236,10 @@ class ProfileWindow(Toplevel):
         }
         for sample in samples:
             Button(self.aside_frame, width=10, text=sample,
-                   command=lambda i=sample: samples[i](self, self.profile)).pack(pady=5)
+                   command=lambda i=sample: samples[i](self, self.profile)).pack(pady=5, side=TOP)
 
         Button(self.aside_frame, text='Delete profile', command=lambda: root.delete_profile(self, self.profile))\
-            .pack(side=BOTTOM, anchor=SE)
+            .pack(side=BOTTOM, pady=5, anchor=SE)
 
 
 class QuestsWindow(Toplevel, Provider):

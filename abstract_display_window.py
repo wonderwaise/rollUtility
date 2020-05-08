@@ -14,7 +14,7 @@ class DisplayWindow(AbstractWindow):
             Label(self.header, text=text, font=('Times New Roman', 25, 'bold')).pack(side=LEFT, padx=10, expand=1)
 
         self.container = Frame(self)
-        self.container.pack(padx=20, pady=10, fill=BOTH, expand=1)
+        self.container.pack(padx=20, pady=10, fill=BOTH, expand=1, side=LEFT)
 
         if automation:
             self.__iterate_strings()
@@ -24,7 +24,7 @@ class DisplayWindow(AbstractWindow):
             self.display_row(parameter, self.parameters[parameter])
 
     def display_row(self, key, value, *, font='Times New Roman', width=15, height=2, font_size=15):
-        for num, text in enumerate(key, value):
+        for num, text in enumerate([key, value]):
             Label(self.container, text=text, width=width, height=height,
                   font=(font, font_size, 'normal')).grid(row=self.row, column=num)
         self.row += 1
