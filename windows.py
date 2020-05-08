@@ -147,39 +147,11 @@ class ItemsList(Toplevel):
 
 class ItemInfo(DisplayWindow):
     def __init__(self, parent, item: Item):
-        DisplayWindow.__init__(self, parent, f'Info about: {item.name}', 'auto', item.name, f'Weight: {item.weight}', False)
+        DisplayWindow.__init__(self, parent, f'Info about: {item.name}', 'auto', item.name, f'Weight: {item.weight}', True, **item.stats)
         self.item = item
-        top_frame = Frame(self)
-        top_frame.pack(fill=X, pady=10)
 
-        self.canvas = Canvas(self, width=350)
-        self.parameters_frame = Frame(self.canvas)
-
-        self.params_frame = Frame(self.parameters_frame, pady=20)
-        self.params_frame.pack(fill=BOTH, expand=1)
-        self.scroller = Scrollbar(self, command=self.canvas.yview)
-        self.canvas_setting()
-        self.scroller.pack(side=RIGHT, fill=Y)
         Button(self, text='Delete Item',
                command=lambda: parent.delete_item(self, self.item)).pack(side=RIGHT, pady=10, padx=10, anchor=N)
-        self.canvas.pack(fill=Y, expand=1, padx=10)
-        self.iterate_parameters()
-
-    def canvas_setting(self):
-        self.parameters_frame.bind('<Configure>',
-                                   lambda event: self.canvas.config(scrollregion=self.canvas.bbox("all")))
-        self.canvas.create_window((0, 0), window=self.parameters_frame, anchor='nw')
-        self.canvas.config(yscrollcommand=self.scroller.set)
-
-    def iterate_parameters(self):
-        for row, stat in enumerate(self.item.stats):
-            self.accommodate_parameter(row, stat, self.item.stats[stat])
-
-    def accommodate_parameter(self, row, name, value):
-        Label(self.params_frame, text=name, width=15, height=2, relief=SOLID,
-              font=('Times New Roman', 15, 'normal')).grid(row=row, sticky=W)
-        Label(self.params_frame, text=value, width=15, height=2, relief=SOLID,
-              font=('Times New Roman', 15, 'normal')).grid(row=row, column=1)
 
     def delete_item(self, parent):
         if askyesno('Verify', f'Do you really want to delete [{self.item.name}]?'):
