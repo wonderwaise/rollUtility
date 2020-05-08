@@ -2,13 +2,12 @@ from tkinter import *
 from tkinter.messagebox import *
 from pickle_tools import Database
 from structures import *
+from abstract_display_window import DisplayWindow
 
 DATABASE = Database.load()
 profile_names = [x.name for x in DATABASE['profiles']]
 item_names = [x.name for x in DATABASE['items'].inventory]
 # Profile window class >>> remake field spawning => aside spawn first to evade disappear
-# Base parameters such as weight and so on
-# Abstract class for creation windows and Concrete classes for create profile, items, quests, etc.
 # NPC creation, Item creation, Item list for award on quests.
 
 
@@ -81,14 +80,14 @@ class MainWindow(Tk):
 
     def create_profile(self, name):
         add_profile_window = AskWindowSample(self, 'New Profile', '400x700', ['Name'])
-        add_profile_window.create_parameter_field('Space', int)
+        add_profile_window.create_text_parameter_field('Space', int)
         add_profile_window.wait_window()
-        for field in add_profile_window.box:
-            if not add_profile_window.box[field]:
+        for field in add_profile_window.result:
+            if not add_profile_window.result[field]:
                 return
-        inv = Inventory('root', int(add_profile_window.box.pop('Space')))
+        inv = Inventory('root', int(add_profile_window.result.pop('Space')))
         abcv = Inventory('abstract root')
-        p = Profile(name.title(), inv, abcv, **add_profile_window.box)
+        p = Profile(name.title(), inv, abcv, **add_profile_window.result)
         DATABASE['profiles'].append(p)
         Database.save(DATABASE)
         self.refresh_profile_buttons()
@@ -146,25 +145,24 @@ class ItemsList(Toplevel):
             ItemInfo(self, item)
 
 
-class ItemInfo(Toplevel):
+class ItemInfo(DisplayWindow):
     def __init__(self, parent, item: Item):
-        Toplevel.__init__(self, parent)
-        self.title(f'Info about: {item.name}')
+        DisplayWindow.__init__(self, parent, f'Info about: {item.name}', 'auto', item.name, f'Weight: {item.weight}', False)
         self.item = item
         top_frame = Frame(self)
-        top_frame.pack(fill=X)
-
-        for attr in [item.name, f'Weight: {item.weight}']:
-            Label(top_frame, text=attr, font=('Times New Roman', 20, 'bold')).pack(side=LEFT, padx=15, expand=1)
+        top_frame.pack(fill=X, pady=10)
 
         self.canvas = Canvas(self, width=350)
         self.parameters_frame = Frame(self.canvas)
+
+        self.params_frame = Frame(self.parameters_frame, pady=20)
+        self.params_frame.pack(fill=BOTH, expand=1)
         self.scroller = Scrollbar(self, command=self.canvas.yview)
         self.canvas_setting()
         self.scroller.pack(side=RIGHT, fill=Y)
         Button(self, text='Delete Item',
                command=lambda: parent.delete_item(self, self.item)).pack(side=RIGHT, pady=10, padx=10, anchor=N)
-        self.canvas.pack(fill=Y, expand=1)
+        self.canvas.pack(fill=Y, expand=1, padx=10)
         self.iterate_parameters()
 
     def canvas_setting(self):
@@ -174,16 +172,13 @@ class ItemInfo(Toplevel):
         self.canvas.config(yscrollcommand=self.scroller.set)
 
     def iterate_parameters(self):
-        params_frame = Frame(self.parameters_frame, pady=20)
-        params_frame.pack(fill=BOTH, expand=1)
         for row, stat in enumerate(self.item.stats):
-            self.accommodate_parameter(row, stat, self.item.stats[stat], params_frame)
+            self.accommodate_parameter(row, stat, self.item.stats[stat])
 
-    @staticmethod
-    def accommodate_parameter(row, name, value, master):
-        Label(master, text=name, width=15, height=2, relief=SOLID,
+    def accommodate_parameter(self, row, name, value):
+        Label(self.params_frame, text=name, width=15, height=2, relief=SOLID,
               font=('Times New Roman', 15, 'normal')).grid(row=row, sticky=W)
-        Label(master, text=value, width=15, height=2, relief=SOLID,
+        Label(self.params_frame, text=value, width=15, height=2, relief=SOLID,
               font=('Times New Roman', 15, 'normal')).grid(row=row, column=1)
 
     def delete_item(self, parent):
@@ -196,25 +191,25 @@ class ItemInfo(Toplevel):
 class NewItemWindow(AskWindowSample):
     def __init__(self, parent=None):
         super().__init__(parent, 'New Item', '400x700', [])
-        self.create_parameter_field('Item name', str)
-        self.create_parameter_field('Item weight', int)
+        self.create_text_parameter_field('Item name', str)
+        self.create_text_parameter_field('Item weight', int)
         self.wait_window()
         self.create_item_object()
 
     def check_box(self):
-        for key in self.box:
-            if not self.box[key]:
+        for key in self.result:
+            if not self.result[key]:
                 return 0
         return 1
 
     def create_item_object(self):
         if self.check_box():
-            name = self.box.pop('Item name')
+            name = self.result.pop('Item name')
             if name in item_names:
                 showerror('Error', f'Item with name {name} already exists!')
                 return
-            weight = self.box.pop('Item weight')
-            DATABASE['items'].put(Item(name, weight, **self.box))
+            weight = self.result.pop('Item weight')
+            DATABASE['items'].put(Item(name, weight, **self.result))
 
 
 # -----------------------------------------------------------------------

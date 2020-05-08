@@ -16,6 +16,9 @@ class Inventory:
         if self.weight + item.weight <= self.space:
             self.inventory.append(item)
 
+    def get(self):
+        return self.inventory
+
 
 class Quest:
     def __init__(self, description: str, parent, award: list, name=None, **kwargs):
@@ -65,10 +68,10 @@ class Profile:
     def add_quest(self, parent):
         add_quest_window = AskWindowSample(parent, 'New Quest', '400x700', [], 4)
         for parameter in ['Name', 'Description', 'Given by', 'Award']:
-            add_quest_window.create_parameter_field(parameter, str)
+            add_quest_window.create_text_parameter_field(parameter, str)
         add_quest_window.wait_window()
         try:
-            result = add_quest_window.box
+            result = add_quest_window.result
             self.quests.append(Quest(result['Description'], result['Given by'], result['Award'], result['Name']))
         except KeyError:
             pass
@@ -76,13 +79,6 @@ class Profile:
     def add_achieve(self, achievement: Achievement):
         self.quests.append(achievement)
 
-    def close_quest(self, quest: Quest):
-        for item in quest.award:
-            if isinstance(item, NonAbstractItem):
-                self.inventory.put(item)
-            else:
-                self.abcventory.put(item)
-        self.quests.remove(quest)
 
 
 
