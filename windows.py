@@ -214,65 +214,80 @@ class ProfileWindow(DisplayWindow):
             .pack(side=BOTTOM, pady=5, anchor=SE)
 
 
-class QuestsWindow(Toplevel, Provider):
+class QuestsWindow(DisplayWindow, Provider):
     def __init__(self, parent, profile):
-        Toplevel.__init__(self, parent)
+        DisplayWindow.__init__(self, parent, f'Quests: {profile.name}', '800x500', profile.name, '', False)
         Provider.__init__(self, profile)
-        self.title(f'{self.profile.name}\'s quests')
-        self.geometry('700x400')
-        self.focus_set()
-        self.grab_set()
 
+        self.aside = Frame(self)
+        self.aside.pack(side=RIGHT, fill=Y)
+        self.create_aside_panel()
         self.existing_quests = {}
-        self.quests_frame = Frame(self)
-        self.bottom_frame = Frame(self)
-        self.quests_frame.pack(expand=1, fill=BOTH, padx=10)
-        self.bottom_frame.pack(fill=X)
-        Button(self.bottom_frame, text='Add Quest',
-               command=self.add_quest).pack(
-            side=LEFT, padx=5, pady=5)
         self.post_quests()
+
+    def create_aside_panel(self):
+        Button(self.aside, text='Add Quest', height=3, width=15, command=self.add_quest).pack(padx=10, pady=10)
 
     def add_quest(self):
         self.profile.add_quest(self)
         Database.save(DATABASE)
         self.post_quests()
 
-    def create_quest_environment(self):
-        border = Frame(self.quests_frame, bg='black')
-        border.pack(fill=X, pady=5)
-        quest_frame = Frame(border, height=10)
-        right_buttons_frame = Frame(quest_frame, height=5)
-        delete_quest_button = Button(right_buttons_frame)
-        give_award_button = Button(right_buttons_frame)
-        quest_name_frame = Frame(quest_frame)
-        quest_description = Frame(quest_frame)
-        award_button = Button(quest_frame)
-        quest_frame.pack(fill=BOTH, expand=1, pady=2, padx=2)
-        right_buttons_frame.pack(side=RIGHT, fill=Y)
-        delete_quest_button.pack(fill=BOTH, expand=1)
-        give_award_button.pack(fill=BOTH, expand=1)
-        quest_name_frame.pack(fill=X)
-        award_button.pack(side=RIGHT, fill=Y, pady=4, padx=20)
-        quest_description.pack(fill=BOTH, expand=1)
-        return border, delete_quest_button, give_award_button, quest_name_frame, quest_description, award_button
+    def create_quest_environment(self, q):
+        # self.frame_inside = master frame
+        self.canvas.config(width=670, height=400)
+        container = Frame(self.frame_inside, bd=2, bg='black')
+        container.pack(expand=1, pady=20, padx=20, anchor=N)
+
+        # side=RIGHT
+        right_buttons_ = Frame(container)
+        right_buttons_.pack(side=RIGHT, fill=Y)
+        delete_b = Button(right_buttons_, text='Delete Quest', width=10, command=lambda: self.delete_quest_frame(q))
+        delete_b.pack(fill=Y, expand=1)
+        give_w = Button(right_buttons_, text='Give Awards', width=10)
+        give_w.pack(fill=Y, expand=1)
+
+        quest_details_ = Frame(container)
+        quest_details_.pack(fill=BOTH, expand=1)
+
+        # fill=X, side=TOP
+        quest_name_ = Frame(quest_details_, bd=2, relief=SOLID)
+        quest_name_.pack(fill=X, expand=1, anchor=N)
+        quest_name = Label(quest_name_, text=q.name, font=('Times New Roman', 20, 'bold'))
+        quest_name.pack(expand=1, pady=5)
+
+        # fill=Y, side=RIGHT .pack(fill=Y, padx=5)
+        buttons_inside_ = Frame(quest_details_)
+        buttons_inside_.pack(fill=Y, side=RIGHT)
+        g_by = Button(buttons_inside_, text='Given by', width=10, command=1)
+        g_by.pack(fill=Y, expand=1)
+        show_awards = Button(buttons_inside_, text='Show Awards', width=10, command=1)
+        show_awards.pack(fill=Y, expand=1)
+
+        description_ = Frame(quest_details_, relief=SOLID)
+        description = Canvas(quest_details_)
+        scroll_desc = Scrollbar(description_, command=description.yview)
+        description.config(yscrollcommand=scroll_desc.set, width=450, height=100)
+        scroll_desc.pack(side=RIGHT, fill=Y)
+        description.pack(fill=BOTH, expand=1)
+        return quest_name, give_w, description, container
 
     def post_quests(self):
-        print('SELF PROFILE QUESTS', self.profile.quests)
         for quest in self.profile.quests:
-            if quest not in self.existing_quests:
-                b, dqb, gab, qnf, qd, ab = self.create_quest_environment()
-                dqb.config(text='Delete Quest', command=lambda i=quest: self.delete_quest_frame(i))
-                gab.config(text='Give Awards', command=lambda i=quest: self.give_award(i.award))
-                Label(qnf, text=quest.name, font=('Times New Roman', 18, 'bold')).pack(padx=5)
-                ab.config(text='Quest Awards', command=lambda i=quest.award: print(i))
-                d = quest.desc
-                while len(d) > 60:
-                    row = d[:60]
-                    Label(qd, text=row, font=('Arial', 10, 'normal')).pack()
-                    d = d.replace(row, '')
-                Label(qd, text=d, font=('Arial', 10, 'normal')).pack()
-                self.existing_quests[quest] = b
+            quest_name, g, desc, c = self.create_quest_environment(quest)
+            self.existing_quests[quest] = c
+            g.config(command=1)
+            self.fill_quest_description(quest, desc)
+
+    @staticmethod
+    def fill_quest_description(quest, canvas):
+        string = quest.desc
+        n = 0
+        while string:
+            n += 1
+            cut = string[:80]
+            string = string[80:]
+            canvas.create_text(10, 0 + (15 * n), text=cut, fill='black', anchor=NW)
 
     def give_award(self, awards: list):
         if not awards:
@@ -281,7 +296,10 @@ class QuestsWindow(Toplevel, Provider):
             print(f'{self.profile.name} is getting {award.name}')
 
     def delete_quest_frame(self, quest):
+        print(quest, '\n', self.existing_quests)
         if askyesno('Verify', 'Do you really want to delete this quest?'):
+            self.profile.quests.remove(quest)
+            Database.save(DATABASE)
             self.existing_quests.pop(quest).destroy()
 
     def show_quest_awards(self, quest):

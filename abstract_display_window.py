@@ -9,9 +9,10 @@ class DisplayWindow(AbstractWindow):
         self.row = 0
 
         self.header = Frame(self)
-        self.container = Canvas(self, width=350)
-        self.frame_inside = Frame(self.container)
-        self.scroller = Scrollbar(self, command=self.container.yview)
+        self.container = Frame(self)
+        self.canvas = Canvas(self.container)
+        self.frame_inside = Frame(self.canvas)
+        self.scroller = Scrollbar(self, command=self.canvas.yview)
 
         self.header.pack(fill=X, padx=20)
         self.create_header(name, core)
@@ -26,11 +27,12 @@ class DisplayWindow(AbstractWindow):
 
     def create_canvas(self):
         self.frame_inside.bind('<Configure>',
-                               lambda event: self.container.config(scrollregion=self.container.bbox("all")))
-        self.container.create_window((0, 0), window=self.frame_inside, anchor=N)
-        self.container.config(yscrollcommand=self.scroller.set)
+                               lambda event: self.canvas.config(scrollregion=self.canvas.bbox("all")))
+        self.canvas.create_window((0, 0), window=self.frame_inside, anchor=NW)
+        self.canvas.config(yscrollcommand=self.scroller.set)
+        self.container.pack(side=LEFT, expand=1, padx=10, pady=10)
         self.scroller.pack(fill=Y, side=RIGHT)
-        self.container.pack(side=LEFT, expand=1, fill=Y, padx=10)
+        self.canvas.pack(side=LEFT, expand=1, fill=BOTH)
 
     def __iterate_strings(self):
         for parameter in self.parameters:
