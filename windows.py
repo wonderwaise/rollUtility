@@ -147,7 +147,7 @@ class ItemsList(Toplevel):
 
 class ItemInfo(DisplayWindow):
     def __init__(self, parent, item: Item):
-        DisplayWindow.__init__(self, parent, f'Info about: {item.name}', 'auto', item.name, f'Weight: {item.weight}', True, **item.stats)
+        DisplayWindow.__init__(self, parent, f'Info about: {item.name}', ('auto',), item.name, f'Weight: {item.weight}', True, **item.stats)
         self.item = item
 
         Button(self, text='Delete Item',
@@ -192,7 +192,7 @@ class Provider:
 
 class ProfileWindow(DisplayWindow):
     def __init__(self, parent, profile):
-        DisplayWindow.__init__(self, parent, f' Profile: {profile.name}', 'auto',
+        DisplayWindow.__init__(self, parent, f' Profile: {profile.name}', ('auto', ),
                                profile.name, f'Space: {profile.inventory.space}', True, **profile.stats)
         self.aside_frame = Frame(self)
         self.aside_frame.pack(side=RIGHT, fill=Y, padx=8, pady=10, anchor=NE)
@@ -216,7 +216,7 @@ class ProfileWindow(DisplayWindow):
 
 class QuestsWindow(DisplayWindow, Provider):
     def __init__(self, parent, profile):
-        DisplayWindow.__init__(self, parent, f'Quests: {profile.name}', '800x500', profile.name, '', False)
+        DisplayWindow.__init__(self, parent, f'Quests: {profile.name}', (800, 500), profile.name, '', False)
         Provider.__init__(self, profile)
 
         self.aside = Frame(self)

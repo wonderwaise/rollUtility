@@ -3,13 +3,13 @@ from tkinter import *
 
 
 class DisplayWindow(AbstractWindow):
-    def __init__(self, parent, title: str, geo: str, name, core, automation: bool, **displayable):
-        AbstractWindow.__init__(self, parent, title, geo)
+    def __init__(self, parent, title: str, mgeo: tuple, name, core, automation: bool, **displayable):
+        AbstractWindow.__init__(self, parent, title, mgeo)
         self.parameters = displayable
         self.row = 0
 
         self.header = Frame(self)
-        self.container = Frame(self)
+        self.container = Frame(self, bg='green')
         self.canvas = Canvas(self.container)
         self.frame_inside = Frame(self.canvas)
         self.scroller = Scrollbar(self, command=self.canvas.yview)

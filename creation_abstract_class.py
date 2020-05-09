@@ -79,7 +79,8 @@ class AskWindowSample(AbstractWindow):
 
     def create_combobox_parameter_field(self, parameter_name, iterable):
         var = StringVar()
-        Combobox(self.parameter_frame, textvariable=var, width=35, values=iterable).grid(row=self.rows, column=1, sticky=N+S)
+        Combobox(self.parameter_frame, textvariable=var, width=35,
+                 values=iterable).grid(row=self.rows, column=1, sticky=N+S)
         self.create_parameter_field(parameter_name, var, str)
 
     def create_text_parameter_field(self, parameter_name):
