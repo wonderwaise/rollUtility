@@ -91,11 +91,11 @@ class AskWindowSample(AbstractWindow):
         self.create_parameter_field(parameter_name, text, str)
 
     def create_item_parameter_field(self, parameter_name, inventory):
-        Button(self.parameter_frame, height=2, text='Choose Items',
-               font=('Arial', 20, 'normal'),
+        Button(self.parameter_frame, width=20, height=2, text='Choose Items',
+               font=('Arial', 15, 'normal'),
                command=lambda: self._create_item_window(parameter_name,
-                                                        inventory)).grid(row=self.rows, column=1, sticky=N + W + S)
-        self.create_parameter_field(parameter_name, 1, object)
+                                                        inventory)).grid(row=self.rows, column=1, sticky=N+S)
+        self.create_parameter_field(parameter_name, structures.Inventory('1'), object)
 
     def _create_item_window(self, pn, inventory):
         item_selection = ItemSelectionWindow(self, 'Choose Items', inventory)
@@ -109,15 +109,12 @@ class AskWindowSample(AbstractWindow):
 
     def check_fields(self):
         for field in self.vars:
-            print('[FIELD] >>>', field)
             if isinstance(self.vars[field]['var'], Text):
-                print(212312312312323)
                 if self.vars[field]['var'].get('1.0', END+'-1c'):
                     continue
                 showerror('Error', f'{field} has empty value!')
             if self.vars[field]['var'].get():
                 right_value = self.check_type(self.vars[field]['var'].get(), self.vars[field]['type'])
-                print('[RIGHT VALUE]', right_value, type(right_value))
                 if not right_value:
                     showerror('Error', f'{field} has invalid value!')
                     return
@@ -129,19 +126,21 @@ class AskWindowSample(AbstractWindow):
 
     @staticmethod
     def check_type(target, valuetype):
-        print(target, valuetype, '***')
         try:
-            x = valuetype(target)
+            if valuetype is not object:
+                target = valuetype(target)
         except ValueError:
             pass
         else:
-            return x
+            return target
 
     def end_process(self):
         if self.check_fields():
             for x in self.vars:
                 if isinstance(self.vars[x]['var'], Text):
                     self.result[x] = self.vars[x]['var'].get('1.0', END+'-1c')
+                elif isinstance(self.vars[x]['var'], structures.Inventory):
+                    self.result[x] = self.vars[x]['var'].get()
                 else:
                     self.result[x] = self.vars[x]['type'](self.vars[x]['var'].get())
             self.destroy()

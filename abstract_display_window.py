@@ -36,7 +36,6 @@ class DisplayWindow(AbstractWindow):
 
     def __iterate_strings(self):
         for parameter in self.parameters:
-            print('1')
             self.display_row(parameter, self.parameters[parameter])
 
     def display_row(self, key, value, *, font='Times New Roman', width=15, height=2, font_size=15):

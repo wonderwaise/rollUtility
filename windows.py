@@ -3,6 +3,7 @@ from tkinter.messagebox import *
 from pickle_tools import Database
 from structures import *
 from abstract_display_window import DisplayWindow
+from abstract_itemlist_window import ItemsList
 
 DATABASE = Database.load()
 profile_names = [x.name for x in DATABASE['profiles']]
@@ -41,7 +42,9 @@ class MainWindow(Tk):
         Button(frame, text='Add Profile', command=self.get_new_profile_name).pack(side=LEFT, padx=10, pady=10)
 
     def create_show_items_button(self, frame):
-        Button(frame, text='All Items', command=lambda: ItemsList(self)).pack(side=RIGHT, padx=10, pady=10)
+        Button(frame, text='All Items',
+               command=lambda: ItemsList(self, 'All Items', (500, 600),
+                                         DATABASE['items'].inventory, True)).pack(side=RIGHT, padx=10, pady=10)
 
     def refresh_profile_buttons(self):
         for profile in DATABASE['profiles']:
@@ -69,7 +72,6 @@ class MainWindow(Tk):
     def profile_name_check(self, field, window):
         name = field.get()
         if len(name) > 2:
-            print(name.title(), self.profile_name_buttons)
             if name.title() in self.profile_name_buttons:
                 showerror('Profile Exists', f'[{name}] already exists. Please choose another profile name')
                 return
@@ -106,56 +108,6 @@ class MainWindow(Tk):
             showinfo('Success!', f'Profile: {profile.name} has been successfully deleted!')
 
 
-class ItemsList(Toplevel):
-    def __init__(self, parent):
-        Toplevel.__init__(self, parent)
-        self.grab_set()
-        self.title('Items')
-        self.geometry('300x500')
-        self.create_list()
-
-    def create_list(self):
-        self.list = Listbox(self, relief=SOLID, selectmode=SINGLE)
-        self.scroller = Scrollbar(self, command=self.list.yview)
-        self.list.config(yscrollcommand=self.scroller.set, font=('Arial', 20, 'normal'))
-        self.scroller.pack(side=RIGHT, fill=Y)
-        self.list.pack(expand=1, fill=BOTH)
-        self.fill_list()
-        self.list.bind('<Double-1>', lambda event: self.on_click())
-
-    def delete_item(self, child, item):
-        item_names.remove(item.name)
-        DATABASE['items'].inventory.remove(item)
-        Database.save(DATABASE)
-        child.destroy()
-        self.list.destroy()
-        self.scroller.destroy()
-        self.create_list()
-
-    def fill_list(self):
-        for item in DATABASE['items'].inventory:
-            self.list.insert(END, f'[{item}]')
-
-    def on_click(self):
-        index = self.list.curselection()[0]
-        try:
-            item = DATABASE['items'].inventory[index]
-        except KeyError:
-            showinfo('Info', 'Maybe this item was deleted. I cant open its info')
-            self.list.delete(index)
-        else:
-            ItemInfo(self, item)
-
-
-class ItemInfo(DisplayWindow):
-    def __init__(self, parent, item: Item):
-        DisplayWindow.__init__(self, parent, f'Info about: {item.name}', ('auto',), item.name, f'Weight: {item.weight}', True, **item.stats)
-        self.item = item
-
-        Button(self, text='Delete Item132',
-               command=lambda: parent.delete_item(self, self.item)).pack(side=RIGHT, pady=10, padx=10, anchor=N)
-
-
 class NewItemWindow(AskWindowSample):
     def __init__(self, parent=None):
         super().__init__(parent, 'New Item', (400, 700), [])
@@ -177,7 +129,6 @@ class NewItemWindow(AskWindowSample):
                 showerror('Error', f'Item with name {name} already exists!')
                 return
             weight = self.result.pop('Item weight')
-            print('[CHECK]', name, weight, type(weight))
             item_names.append(name)
             DATABASE['items'].put(Item(name, weight, **self.result))
 
@@ -237,7 +188,7 @@ class QuestsWindow(DisplayWindow, Provider):
         for key in result:
             if not result[key]:
                 return 0
-        q = Quest(result['Description'], result['Given by'], result['Award'], result['Name'])
+        q = Quest(result['Description'], result['Given by'], result['Award'], result['Name'].title())
         self.profile.quests.append(q)
         Database.save(DATABASE)
         self.post_quests()
@@ -270,7 +221,7 @@ class QuestsWindow(DisplayWindow, Provider):
         buttons_inside_.pack(fill=Y, side=RIGHT)
         g_by = Button(buttons_inside_, text='Given by', width=10, command=1)
         g_by.pack(fill=Y, expand=1)
-        show_awards = Button(buttons_inside_, text='Show Awards', width=10, command=1)
+        show_awards = Button(buttons_inside_, text='Show Awards', width=10, command=lambda i=q: self.show_quest_awards(i))
         show_awards.pack(fill=Y, expand=1)
 
         description_ = Frame(quest_details_, relief=SOLID)
@@ -301,21 +252,20 @@ class QuestsWindow(DisplayWindow, Provider):
 
     def give_award(self, awards: list):
         if not awards:
-            print(f'{self.profile.name} got nothing')
+            pass
         for award in awards:
-            print(f'{self.profile.name} is getting {award.name}')
+            pass
 
     def delete_quest_frame(self, quest):
-        print(quest, '\n', self.existing_quests)
         if askyesno('Verify', 'Do you really want to delete this quest?'):
             self.profile.quests.remove(quest)
             Database.save(DATABASE)
             self.existing_quests.pop(quest).destroy()
 
-    def show_quest_awards(self, quest):
-        print('Quest Awards:')
+    @staticmethod
+    def show_quest_awards(quest):
         for award in quest.award:
-            print(award)
+            print(award.name)
 
 
 class InventoryWindow(Toplevel, Provider):
