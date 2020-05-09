@@ -5,7 +5,8 @@ from abstract_window import AbstractWindow
 class ItemSelectionWindow(AbstractWindow):
     def __init__(self, parent, title, inventory):
         AbstractWindow.__init__(self, parent, title, ('auto',))
-        self.unselected_items = inventory.inventory
+        self.all_items = {x.name: x for x in inventory.inventory}
+        self.unselected_items = [x.name for x in inventory.inventory]
         self.selected_items = []
         self.create_lists()
 

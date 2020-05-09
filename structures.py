@@ -13,6 +13,7 @@ class Inventory:
         if self.name == 'MAIN':
             self.inventory.append(item)
             return
+        print(type(self.weight), type(item.weight), type(self.space), item.name)
         if self.weight + item.weight <= self.space:
             self.inventory.append(item)
 
@@ -38,7 +39,6 @@ class Item:
 
     def __str__(self):
         return self.name
-
 
 
 class Achievement:

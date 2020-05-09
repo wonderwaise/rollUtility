@@ -88,6 +88,7 @@ class MainWindow(Tk):
         inv = Inventory('root', int(add_profile_window.result.pop('Space')))
         abcv = Inventory('abstract root')
         p = Profile(name.title(), inv, abcv, **add_profile_window.result)
+        profile_names.append(name)
         DATABASE['profiles'].append(p)
         Database.save(DATABASE)
         self.refresh_profile_buttons()
@@ -123,6 +124,7 @@ class ItemsList(Toplevel):
         self.list.bind('<Double-1>', lambda event: self.on_click())
 
     def delete_item(self, child, item):
+        item_names.remove(item.name)
         DATABASE['items'].inventory.remove(item)
         Database.save(DATABASE)
         child.destroy()
@@ -150,19 +152,13 @@ class ItemInfo(DisplayWindow):
         DisplayWindow.__init__(self, parent, f'Info about: {item.name}', ('auto',), item.name, f'Weight: {item.weight}', True, **item.stats)
         self.item = item
 
-        Button(self, text='Delete Item',
+        Button(self, text='Delete Item132',
                command=lambda: parent.delete_item(self, self.item)).pack(side=RIGHT, pady=10, padx=10, anchor=N)
-
-    def delete_item(self, parent):
-        if askyesno('Verify', f'Do you really want to delete [{self.item.name}]?'):
-            DATABASE['items'].inventory.remove(self.item)
-            Database.save(DATABASE)
-            parent.destroy()
 
 
 class NewItemWindow(AskWindowSample):
     def __init__(self, parent=None):
-        super().__init__(parent, 'New Item', '400x700', [])
+        super().__init__(parent, 'New Item', (400, 700), [])
         self.create_entry_parameter_field('Item name', str)
         self.create_entry_parameter_field('Item weight', int)
         self.wait_window()
@@ -176,11 +172,13 @@ class NewItemWindow(AskWindowSample):
 
     def create_item_object(self):
         if self.check_box():
-            name = self.result.pop('Item name')
+            name = self.result.pop('Item name').title()
             if name in item_names:
                 showerror('Error', f'Item with name {name} already exists!')
                 return
             weight = self.result.pop('Item weight')
+            print('[CHECK]', name, weight, type(weight))
+            item_names.append(name)
             DATABASE['items'].put(Item(name, weight, **self.result))
 
 
@@ -229,11 +227,11 @@ class QuestsWindow(DisplayWindow, Provider):
         Button(self.aside, text='Add Quest', height=3, width=15, command=self.add_quest).pack(padx=10, pady=10)
 
     def add_quest(self):
-        add_quest_window = AskWindowSample(self, 'New Quest', 'auto', [], 4)
+        add_quest_window = AskWindowSample(self, 'New Quest', (500, 700), [], 4)
         add_quest_window.create_entry_parameter_field('Name', str)
         add_quest_window.create_text_parameter_field('Description')
         add_quest_window.create_combobox_parameter_field('Given by', ['NPC 1', 'NPC 2', 'NPC 3'])
-        add_quest_window.create_entry_parameter_field('Award', int)
+        add_quest_window.create_item_parameter_field('Award', DATABASE['items'])
         add_quest_window.wait_window()
         result = add_quest_window.result
         for key in result:

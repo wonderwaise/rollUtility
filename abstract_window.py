@@ -7,4 +7,4 @@ class AbstractWindow(Toplevel):
         self.title(title)
         self.grab_set()
         if mgeo != ('auto',):
-            self.maxsize(mgeo)
+            self.maxsize(*mgeo)
