@@ -89,7 +89,9 @@ class AskWindowSample(AbstractWindow):
 
     def check_fields(self):
         for field in self.vars:
+            print('[FIELD] >>>', field)
             if isinstance(self.vars[field]['var'], Text):
+                print(212312312312323)
                 if self.vars[field]['var'].get('1.0', END+'-1c'):
                     continue
                 showerror('Error', f'{field} has empty value!')
@@ -116,5 +118,9 @@ class AskWindowSample(AbstractWindow):
 
     def end_process(self):
         if self.check_fields():
-            self.result = {x: self.vars[x]['var'].get() for x in self.vars}
+            for x in self.vars:
+                if isinstance(self.vars[x]['var'], Text):
+                    self.result[x] = self.vars[x]['var'].get('1.0', END+'-1c')
+                else:
+                    self.result[x] = self.vars[x]['var'].get()
             self.destroy()

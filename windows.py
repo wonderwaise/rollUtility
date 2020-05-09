@@ -233,13 +233,16 @@ class QuestsWindow(DisplayWindow, Provider):
         add_quest_window.create_entry_parameter_field('Name', str)
         add_quest_window.create_text_parameter_field('Description')
         add_quest_window.create_combobox_parameter_field('Given by', ['NPC 1', 'NPC 2', 'NPC 3'])
-        add_quest_window.create_text_parameter_field('Award')
+        add_quest_window.create_entry_parameter_field('Award', int)
         add_quest_window.wait_window()
         result = add_quest_window.result
         for key in result:
             if not result[key]:
                 return 0
-        self.profile.quests.append(Quest(result['Description'], result['Given by'], result['Award'], result['Name']))
+        q = Quest(result['Description'], result['Given by'], result['Award'], result['Name'])
+        self.profile.quests.append(q)
+        Database.save(DATABASE)
+        self.post_quests()
 
     def create_quest_environment(self, q):
         # self.frame_inside = master frame
@@ -282,10 +285,11 @@ class QuestsWindow(DisplayWindow, Provider):
 
     def post_quests(self):
         for quest in self.profile.quests:
-            quest_name, g, desc, c = self.create_quest_environment(quest)
-            self.existing_quests[quest] = c
-            g.config(command=1)
-            self.fill_quest_description(quest, desc)
+            if quest not in self.existing_quests:
+                quest_name, g, desc, c = self.create_quest_environment(quest)
+                self.existing_quests[quest] = c
+                g.config(command=1)
+                self.fill_quest_description(quest, desc)
 
     @staticmethod
     def fill_quest_description(quest, canvas):
