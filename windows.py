@@ -31,20 +31,15 @@ class MainWindow(Tk):
     def create_bottom_panel(self):
         low_bar = Frame(self)
         low_bar.pack(side=BOTTOM, fill=X)
-        self.create_add_profile_button(low_bar)
-        self.create_add_item_button(low_bar)
-        self.create_show_items_button(low_bar)
-
-    def create_add_item_button(self, frame):
-        Button(frame, text='Add Item', command=self.create_item).pack(side=LEFT, padx=10, pady=10)
-
-    def create_add_profile_button(self, frame):
-        Button(frame, text='Add Profile', command=self.get_new_profile_name).pack(side=LEFT, padx=10, pady=10)
-
-    def create_show_items_button(self, frame):
-        Button(frame, text='All Items',
+        Button(low_bar, text='Add Item', command=self.create_item).pack(side=LEFT, padx=10, pady=10)
+        Button(low_bar, text='Add Profile', command=self.get_new_profile_name).pack(side=LEFT, padx=10, pady=10)
+        Button(low_bar, text='All Items',
                command=lambda: ItemsList(self, 'All Items', (500, 600),
                                          DATABASE['items'].inventory, True)).pack(side=RIGHT, padx=10, pady=10)
+
+        Button(low_bar, text='All NPCs',
+               command=lambda: NotPlayerCharactersWindow(self, 'NPCs', (600, 500), 'Not Player Characters',
+                                                         'All NPCs')).pack(side=RIGHT, padx=10, pady=10)
 
     def refresh_profile_buttons(self):
         for profile in DATABASE['profiles']:
@@ -81,7 +76,7 @@ class MainWindow(Tk):
             showerror('Invalid Profile Name', 'Profile Name should have 2 symbols minimum')
 
     def create_profile(self, name):
-        add_profile_window = AskWindowSample(self, 'New Profile', '400x700', ['Name'])
+        add_profile_window = AskWindowSample(self, 'New Profile', (400, 700), ['Name'], 90)
         add_profile_window.create_entry_parameter_field('Space', int)
         add_profile_window.wait_window()
         for field in add_profile_window.result:
@@ -141,8 +136,8 @@ class Provider:
 
 class ProfileWindow(DisplayWindow):
     def __init__(self, parent, profile):
-        DisplayWindow.__init__(self, parent, f' Profile: {profile.name}', ('auto', ),
-                               profile.name, f'Space: {profile.inventory.space}', True, **profile.stats)
+        DisplayWindow.__init__(self, parent, f'Profile: {profile.name}', (500, 700),
+                               profile.name, profile.inventory.space, True, **profile.stats)
         self.aside_frame = Frame(self)
         self.aside_frame.pack(side=RIGHT, fill=Y, padx=8, pady=10, anchor=NE)
         self.profile = profile
@@ -181,7 +176,7 @@ class QuestsWindow(DisplayWindow, Provider):
         add_quest_window = AskWindowSample(self, 'New Quest', (500, 700), [], 4)
         add_quest_window.create_entry_parameter_field('Name', str)
         add_quest_window.create_text_parameter_field('Description')
-        add_quest_window.create_combobox_parameter_field('Given by', ['NPC 1', 'NPC 2', 'NPC 3'])
+        add_quest_window.create_combobox_parameter_field('Given by', [x.name for x in DATABASE['npcs']])
         add_quest_window.create_item_parameter_field('Award', DATABASE['items'])
         add_quest_window.wait_window()
         result = add_quest_window.result
@@ -286,6 +281,72 @@ class AchievementsWindow(Toplevel, Provider):
         self.geometry('700x400')
         self.focus_set()
         self.grab_set()
+
+
+class NotPlayerCharactersWindow(DisplayWindow):
+    def __init__(self, parent, title, msize, name, core):
+        DisplayWindow.__init__(self, parent, title, msize, name, core, False)
+        self.aside_panel = Frame(self)
+        self.buttons = {}
+        self.aside_panel.pack(side=RIGHT, fill=Y)
+        self.fill_npc_list()
+        Button(self.aside_panel, text='Add NPC', command=self.create_new_npc).pack(padx=10, pady=10)
+
+    def fill_npc_list(self):
+        for character in DATABASE['npcs']:
+            if character.name not in self.buttons:
+                npc_button = Button(self.frame_inside, text=character.name, width=15,
+                                    font=('Times New Roman', 30, 'bold'),
+                                    command=lambda i=character: NPCWindow(self, i, (500, 700)), relief=SOLID)
+                npc_button.pack(pady=10, padx=10, expand=1, fill=X)
+                self.buttons[character.name] = npc_button
+
+    def create_new_npc(self):
+        add_npc_window = AskWindowSample(self, 'New NPC', (500, 500), [], 4)
+        add_npc_window.create_entry_parameter_field('Name', str)
+        add_npc_window.create_entry_parameter_field('Race', str)
+        add_npc_window.create_entry_parameter_field('Home', str)
+        add_npc_window.create_entry_parameter_field('Occupation', str)
+        add_npc_window.wait_window()
+        result = add_npc_window.result
+        if self.check_box(result):
+            DATABASE['npcs'].append(NotPlayerCharacter(result['Name'], result['Race'],
+                                                       result['Home'], result['Occupation']))
+            Database.save(DATABASE)
+        self.fill_npc_list()
+
+    def delete(self, character):
+        self.buttons.pop(character.name).destroy()
+        DATABASE['npcs'].remove(character)
+        Database.save(DATABASE)
+
+
+    @staticmethod
+    def check_box(box) -> int:
+        for el in box:
+            if not box[el]:
+                return 0
+        else:
+            return 1
+
+
+class NPCWindow(DisplayWindow):
+    def __init__(self, parent, npc_object, msize):
+        DisplayWindow.__init__(self, parent, f'NPC: {npc_object.name}', msize, npc_object.name,
+                               'NPC Profile', True, **npc_object.get_stats())
+
+        self.aside_panel = Frame(self)
+        self.aside_panel.pack(fill=Y, side=RIGHT)
+        Button(self.aside_panel, text='Delete NPC', command=lambda: self.delete_npc(parent,
+                                                                                    npc_object)).pack(padx=10, pady=10)
+
+    def delete_npc(self, parent, npc):
+        parent.delete(npc)
+        self.destroy()
+        showinfo('Info', f'{npc.name} was successfully deleted!')
+
+
+
 
 
 root = MainWindow()

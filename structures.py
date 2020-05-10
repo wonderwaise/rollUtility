@@ -66,26 +66,17 @@ class Profile:
         self.quests.append(achievement)
 
 
+class NotPlayerCharacter:
+    def __init__(self, name, race, home, occupation):
+        self.name = name
+        self.race = race
+        self.home = home
+        self.occupation = occupation
+        self.avatar = None
 
+    def get_stats(self):
+        return {'Name': self.name, 'Race': self.race, 'Home': self.home, 'Occupation': self.occupation}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    @staticmethod
+    def update_avatar():
+        print('NOT IMPLEMENTED')

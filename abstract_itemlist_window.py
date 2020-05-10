@@ -22,7 +22,7 @@ class ItemsList(AbstractWindow):
 
     def fill_list(self):
         for item in self.items:
-            self.list.insert(END, f'[{item}]')
+            self.list.insert(END, f'[{item.name}]')
 
     def on_click(self):
         index = self.list.curselection()[0]
