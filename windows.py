@@ -8,8 +8,10 @@ from abstract_itemlist_window import ItemsList
 DATABASE = Database.load()
 profile_names = [x.name for x in DATABASE['profiles']]
 item_names = [x.name for x in DATABASE['items'].inventory]
+npc_by_names = {x.name: x for x in DATABASE['npcs']}
 # Profile window class >>> remake field spawning => aside spawn first to evade disappear
 # NPC creation, Item creation, Item list for award on quests.
+# механизм если NPC удален а квест который он выдал остался.
 
 
 # --------------------------------------------------------
@@ -180,10 +182,15 @@ class QuestsWindow(DisplayWindow, Provider):
         add_quest_window.create_item_parameter_field('Award', DATABASE['items'])
         add_quest_window.wait_window()
         result = add_quest_window.result
+        try:
+            parent = npc_by_names[result['Given by']]
+        except KeyError:
+            showerror('Error', 'Invalid NPC name!')
+            return
         for key in result:
             if not result[key]:
                 return 0
-        q = Quest(result['Description'], result['Given by'], result['Award'], result['Name'].title())
+        q = Quest(result['Description'], parent, result['Award'], result['Name'].title())
         self.profile.quests.append(q)
         Database.save(DATABASE)
         self.post_quests()
@@ -214,9 +221,11 @@ class QuestsWindow(DisplayWindow, Provider):
         # fill=Y, side=RIGHT .pack(fill=Y, padx=5)
         buttons_inside_ = Frame(quest_details_)
         buttons_inside_.pack(fill=Y, side=RIGHT)
-        g_by = Button(buttons_inside_, text='Given by', width=10, command=1)
+        g_by = Button(buttons_inside_, text='Given by', width=10,
+                      command=lambda i=q: NPCWindow(self, i.parent, (500, 600), False))
         g_by.pack(fill=Y, expand=1)
-        show_awards = Button(buttons_inside_, text='Show Awards', width=10, command=lambda i=q: self.show_quest_awards(i))
+        show_awards = Button(buttons_inside_, text='Show Awards',
+                             width=10, command=lambda i=q: self.show_quest_awards(i))
         show_awards.pack(fill=Y, expand=1)
 
         description_ = Frame(quest_details_, relief=SOLID)
@@ -297,7 +306,7 @@ class NotPlayerCharactersWindow(DisplayWindow):
             if character.name not in self.buttons:
                 npc_button = Button(self.frame_inside, text=character.name, width=15,
                                     font=('Times New Roman', 30, 'bold'),
-                                    command=lambda i=character: NPCWindow(self, i, (500, 700)), relief=SOLID)
+                                    command=lambda i=character: NPCWindow(self, i, (500, 700), True), relief=SOLID)
                 npc_button.pack(pady=10, padx=10, expand=1, fill=X)
                 self.buttons[character.name] = npc_button
 
@@ -308,6 +317,9 @@ class NotPlayerCharactersWindow(DisplayWindow):
         add_npc_window.create_entry_parameter_field('Home', str)
         add_npc_window.create_entry_parameter_field('Occupation', str)
         add_npc_window.wait_window()
+        if add_npc_window.result['Name'] in npc_by_names:
+            showerror('Error', 'This NPC name is already taken!')
+            return
         result = add_npc_window.result
         if self.check_box(result):
             DATABASE['npcs'].append(NotPlayerCharacter(result['Name'], result['Race'],
@@ -320,7 +332,6 @@ class NotPlayerCharactersWindow(DisplayWindow):
         DATABASE['npcs'].remove(character)
         Database.save(DATABASE)
 
-
     @staticmethod
     def check_box(box) -> int:
         for el in box:
@@ -331,22 +342,22 @@ class NotPlayerCharactersWindow(DisplayWindow):
 
 
 class NPCWindow(DisplayWindow):
-    def __init__(self, parent, npc_object, msize):
+    def __init__(self, parent, npc_object, msize, rootpermissions: bool):
+        print(type(npc_object))
         DisplayWindow.__init__(self, parent, f'NPC: {npc_object.name}', msize, npc_object.name,
                                'NPC Profile', True, **npc_object.get_stats())
 
         self.aside_panel = Frame(self)
         self.aside_panel.pack(fill=Y, side=RIGHT)
-        Button(self.aside_panel, text='Delete NPC', command=lambda: self.delete_npc(parent,
-                                                                                    npc_object)).pack(padx=10, pady=10)
+
+        if rootpermissions:
+            Button(self.aside_panel, text='Delete NPC',
+                   command=lambda: self.delete_npc(parent, npc_object)).pack(padx=10, pady=10)
 
     def delete_npc(self, parent, npc):
         parent.delete(npc)
         self.destroy()
         showinfo('Info', f'{npc.name} was successfully deleted!')
-
-
-
 
 
 root = MainWindow()
