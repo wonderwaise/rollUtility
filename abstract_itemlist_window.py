@@ -24,6 +24,13 @@ class ItemsList(AbstractWindow):
         for item in self.items:
             self.list.insert(END, f'[{item.name}]')
 
+    def delete_item(self, instance, item):
+        instance.destroy()
+        self.items.remove(item)
+        self.list.destroy()
+        self.scroller.destroy()
+        self.create_list()
+
     def on_click(self):
         index = self.list.curselection()[0]
         item = self.items[index]

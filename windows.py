@@ -36,8 +36,7 @@ class MainWindow(Tk):
         Button(low_bar, text='Add Item', command=self.create_item).pack(side=LEFT, padx=10, pady=10)
         Button(low_bar, text='Add Profile', command=self.get_new_profile_name).pack(side=LEFT, padx=10, pady=10)
         Button(low_bar, text='All Items',
-               command=lambda: ItemsList(self, 'All Items', (500, 600),
-                                         DATABASE['items'].inventory, True)).pack(side=RIGHT, padx=10, pady=10)
+               command=lambda: self.create_all_items_window()).pack(side=RIGHT, padx=10, pady=10)
 
         Button(low_bar, text='All NPCs',
                command=lambda: NotPlayerCharactersWindow(self, 'NPCs', (600, 500), 'Not Player Characters',
@@ -51,6 +50,13 @@ class MainWindow(Tk):
                                         command=lambda i=profile: ProfileWindow(self, i))
                 profile_button.pack(fill=X, pady=5)
                 self.profile_name_buttons[profile.name.title()] = profile_button
+
+    def create_all_items_window(self):
+        global item_names
+        w = ItemsList(self, 'All Items', (500, 600), DATABASE['items'].inventory, True)
+        w.wait_window()
+        item_names = [x.name for x in DATABASE['items'].inventory]
+        Database.save(DATABASE)
 
     def get_new_profile_name(self):
         win = Toplevel(self)
@@ -185,7 +191,7 @@ class QuestsWindow(DisplayWindow, Provider):
         try:
             parent = npc_by_names[result['Given by']]
         except KeyError:
-            showerror('Error', 'Invalid NPC name!')
+            showerror('Error', 'Invalid NPC')
             return
         for key in result:
             if not result[key]:
@@ -225,7 +231,8 @@ class QuestsWindow(DisplayWindow, Provider):
                       command=lambda i=q: NPCWindow(self, i.parent, (500, 600), False))
         g_by.pack(fill=Y, expand=1)
         show_awards = Button(buttons_inside_, text='Show Awards',
-                             width=10, command=lambda i=q: self.show_quest_awards(i))
+                             width=10, command=lambda i=q: ItemsList(self, f'{i.name} awards',
+                                                                     (300, 500), i.award, False))
         show_awards.pack(fill=Y, expand=1)
 
         description_ = Frame(quest_details_, relief=SOLID)
@@ -266,11 +273,6 @@ class QuestsWindow(DisplayWindow, Provider):
             Database.save(DATABASE)
             self.existing_quests.pop(quest).destroy()
 
-    @staticmethod
-    def show_quest_awards(quest):
-        for award in quest.award:
-            print(award.name)
-
 
 class InventoryWindow(Toplevel, Provider):
     def __init__(self, parent, profile):
@@ -298,6 +300,7 @@ class NotPlayerCharactersWindow(DisplayWindow):
         self.aside_panel = Frame(self)
         self.buttons = {}
         self.aside_panel.pack(side=RIGHT, fill=Y)
+        self.canvas.config(height=500)
         self.fill_npc_list()
         Button(self.aside_panel, text='Add NPC', command=self.create_new_npc).pack(padx=10, pady=10)
 
@@ -317,19 +320,21 @@ class NotPlayerCharactersWindow(DisplayWindow):
         add_npc_window.create_entry_parameter_field('Home', str)
         add_npc_window.create_entry_parameter_field('Occupation', str)
         add_npc_window.wait_window()
-        if add_npc_window.result['Name'] in npc_by_names:
+        if add_npc_window.result['Name'] and add_npc_window.result['Name'].title() in npc_by_names:
             showerror('Error', 'This NPC name is already taken!')
             return
         result = add_npc_window.result
         if self.check_box(result):
-            DATABASE['npcs'].append(NotPlayerCharacter(result['Name'], result['Race'],
-                                                       result['Home'], result['Occupation']))
+            npc = NotPlayerCharacter(result['Name'], result['Race'], result['Home'], result['Occupation'])
+            DATABASE['npcs'].append(npc)
+            npc_by_names[npc.name] = npc
             Database.save(DATABASE)
         self.fill_npc_list()
 
     def delete(self, character):
         self.buttons.pop(character.name).destroy()
         DATABASE['npcs'].remove(character)
+        npc_by_names.pop(character.name)
         Database.save(DATABASE)
 
     @staticmethod
