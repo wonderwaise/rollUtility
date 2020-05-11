@@ -4,6 +4,8 @@ from pickle_tools import Database
 from structures import *
 from abstract_display_window import DisplayWindow
 from abstract_itemlist_window import ItemsList
+from abstract_window import AbstractWindow
+from item_seletion_window import ItemSelectionWindow
 
 DATABASE = Database.load()
 profile_names = [x.name for x in DATABASE['profiles']]
@@ -274,14 +276,92 @@ class QuestsWindow(DisplayWindow, Provider):
             self.existing_quests.pop(quest).destroy()
 
 
-class InventoryWindow(Toplevel, Provider):
+class InventoryWindow(AbstractWindow, Provider):
     def __init__(self, parent, profile):
-        Toplevel.__init__(self, parent)
+        AbstractWindow.__init__(self, parent, f'{profile.name} Inventory', (800, 500))
         Provider.__init__(self, profile)
-        self.title(f'{self.profile.name}\'s inventory')
-        self.geometry('700x400')
-        self.focus_set()
-        self.grab_set()
+
+        self.show_about = Frame(self, bg='green')
+        self.list_frame = Frame(self, bg='orange')
+        self.items = self.profile.inventory.inventory
+        self.list = self.create_listbox()
+        self.list_frame.pack(side=LEFT, expand=1, fill=BOTH, padx=50, pady=50)
+        self.active = None
+
+        Button(self, text='Add Item', command=self.add_item_request).pack(side=RIGHT, anchor=N, padx=10, pady=10)
+
+        self.show_about.pack(side=RIGHT, expand=1, fill=BOTH, padx=20, pady=20)
+        self.info, self.canvas = self.create_canvas()
+
+    def add_item_request(self):
+        add_item_list_window = ItemSelectionWindow(self, 'Choose Items', DATABASE['items'])
+        add_item_list_window.wait_window()
+
+        if add_item_list_window.selected_items:
+            self.items.extend([add_item_list_window.all_items[x] for x in add_item_list_window.selected_items])
+            Database.save(DATABASE)
+            self.update_listbox()
+
+    def update_listbox(self):
+        self.list.destroy()
+        self.list = self.create_listbox()
+
+    def fill_list(self, li):
+        for item in self.items:
+            li.insert(END, item.name)
+
+    def create_canvas(self):
+        canvas = Canvas(self.show_about, relief=SOLID)
+        s = Scrollbar(self.show_about, command=canvas.yview)
+        inside = Frame(canvas)
+        inside.bind('<Configure>', lambda event: canvas.config(scrollregion=canvas.bbox('all')))
+        canvas.create_window((0, 0), window=inside, anchor=NW)
+        s.pack(side=RIGHT, fill=Y)
+        canvas.config(yscrollcommand=s.set)
+        canvas.pack(expand=1, fill=BOTH)
+        return inside, canvas
+
+    def create_listbox(self):
+        listbox = Listbox(self.list_frame, selectmode=SINGLE, height=200, relief=SOLID)
+        s = Scrollbar(self.list_frame, command=listbox.yview)
+        s.pack(fill=Y, side=RIGHT)
+        listbox.config(yscrollcommand=s.set)
+        listbox.bind('<Double-1>', lambda event: self.on_click())
+        listbox.pack()
+        self.fill_list(listbox)
+        return listbox
+
+    def on_click(self):
+        index = self.list.curselection()[0]
+        item = self.items[index]
+        if self.active is not None:
+            self.active.destroy()
+        self.active = self.show_info(item)
+
+    def show_info(self, item):
+        container = Frame(self.info)
+        container.pack(expand=1, fill=BOTH)
+        Button(container, text='Delete Item', command=lambda i=item: self.delete_item(i)).pack(anchor=NE)
+        params_frame = Frame(container)
+        params_frame.pack(expand=1, fill=BOTH)
+        for n, parameter in enumerate(item.stats):
+            self.display_row(params_frame, parameter, item.stats[parameter], n)
+        return container
+
+# FIX SCROLLBATS -------------------------------------------------------------------------------
+    def delete_item(self, item):
+        if askyesno('Verify', 'Do you really want to delete this item?'):
+            self.items.remove(item)
+            self.active.destroy()
+            self.active = None
+            Database.save(DATABASE)
+            self.update_listbox()
+
+    @staticmethod
+    def display_row(f, key, value, row):
+        for num, text in enumerate([key, value]):
+            Label(f, text=text, width=15, height=3,
+                  font=('Times New Roman', 15, 'normal'), relief=SOLID).grid(row=row, column=num)
 
 
 class AchievementsWindow(Toplevel, Provider):

@@ -51,7 +51,9 @@ class AskWindowSample(AbstractWindow):
         ent.focus_get()
         ent.bind('<Return>', lambda event: self.check_parameter_name_value(var))
         ent.pack(side=LEFT, padx=5)
-        Button(f, text="Confirm", command=lambda: self.check_parameter_name_value(var)).pack(expand=1)
+        confirm = Button(f, text="Confirm", command=lambda: self.check_parameter_name_value(var))
+        confirm.pack(expand=1)
+        confirm.bind('<Return>', lambda event: self.check_parameter_name_value(var))
 
     def check_parameter_name_value(self, field):
         data = field.get().title()
