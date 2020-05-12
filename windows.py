@@ -263,7 +263,8 @@ class QuestsWindow(DisplayWindow, Provider):
             string = string[80:]
             canvas.create_text(10, 0 + (15 * n), text=cut, fill='black', anchor=NW)
 
-    def give_award(self, awards: list):
+    @staticmethod
+    def give_award(awards: list):
         if not awards:
             pass
         for award in awards:
@@ -284,7 +285,7 @@ class InventoryWindow(AbstractWindow, Provider):
         self.show_about = Frame(self, bg='green')
         self.list_frame = Frame(self, bg='orange')
         self.items = self.profile.inventory.inventory
-        self.list = self.create_listbox()
+        self.scroll, self.list = self.create_listbox()
         self.list_frame.pack(side=LEFT, expand=1, fill=BOTH, padx=50, pady=50)
         self.active = None
 
@@ -304,7 +305,8 @@ class InventoryWindow(AbstractWindow, Provider):
 
     def update_listbox(self):
         self.list.destroy()
-        self.list = self.create_listbox()
+        self.scroll.destroy()
+        self.scroll, self.list = self.create_listbox()
 
     def fill_list(self, li):
         for item in self.items:
@@ -329,7 +331,7 @@ class InventoryWindow(AbstractWindow, Provider):
         listbox.bind('<Double-1>', lambda event: self.on_click())
         listbox.pack()
         self.fill_list(listbox)
-        return listbox
+        return s, listbox
 
     def on_click(self):
         index = self.list.curselection()[0]
@@ -341,7 +343,9 @@ class InventoryWindow(AbstractWindow, Provider):
     def show_info(self, item):
         container = Frame(self.info)
         container.pack(expand=1, fill=BOTH)
-        Button(container, text='Delete Item', command=lambda i=item: self.delete_item(i)).pack(anchor=NE)
+        Label(container, text=f'{item.name} stats', font=('Times New Roman', 15, 'bold')).pack(anchor=NW)
+        Button(container, text='Delete Item', command=lambda i=item: self.delete_item(i)).pack(anchor=NE,
+                                                                                               padx=10, pady=10)
         params_frame = Frame(container)
         params_frame.pack(expand=1, fill=BOTH)
         for n, parameter in enumerate(item.stats):
