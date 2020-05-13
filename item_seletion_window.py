@@ -5,8 +5,8 @@ from abstract_window import AbstractWindow
 class ItemSelectionWindow(AbstractWindow):
     def __init__(self, parent, title, inventory):
         AbstractWindow.__init__(self, parent, title, ('auto',))
-        self.all_items = {x.name: x for x in inventory.inventory}
-        self.unselected_items = [x.name for x in inventory.inventory]
+        self.all_items = inventory.inventory
+        self.unselected_items = [x for x in inventory.inventory]
         self.selected_items = []
         self.create_lists()
 
@@ -28,23 +28,23 @@ class ItemSelectionWindow(AbstractWindow):
         self.create_lists()
 
     def fill_master_list(self):
-        for item in self.unselected_items:
-            self.unselected.insert(END, item)
+        for itemname in self.unselected_items:
+            self.unselected.insert(END, itemname)
 
     def fill_selected_list(self):
-        for item in self.selected_items:
-            self.selected.insert(END, item)
+        for itemname in self.selected_items:
+            self.selected.insert(END, itemname)
 
     def add_to(self, to):
         try:
             if to is self.unselected:
-                item = self.selected.get(self.selected.curselection()[0])
-                self.selected_items.remove(item)
-                self.unselected_items.append(item)
+                itemname = self.selected.get(self.selected.curselection()[0])
+                self.selected_items.remove(itemname)
+                self.unselected_items.append(itemname)
             else:
-                item = self.unselected.get(self.unselected.curselection()[0])
-                self.unselected_items.remove(item)
-                self.selected_items.append(item)
+                itemname = self.unselected.get(self.unselected.curselection()[0])
+                self.unselected_items.remove(itemname)
+                self.selected_items.append(itemname)
             self.destroy_lists()
         except IndexError:
             pass

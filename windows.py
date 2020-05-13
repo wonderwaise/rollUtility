@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter.messagebox import *
 from pickle_tools import Database
 from structures import *
+from creation_abstract_class import AskWindowSample
 from abstract_display_window import DisplayWindow
 from abstract_itemlist_window import ItemsList
 from abstract_window import AbstractWindow
@@ -9,7 +10,6 @@ from item_seletion_window import ItemSelectionWindow
 
 DATABASE = Database.load()
 profile_names = [x.name for x in DATABASE['profiles']]
-item_names = [x.name for x in DATABASE['items'].inventory]
 npc_by_names = {x.name: x for x in DATABASE['npcs']}
 # Profile window class >>> remake field spawning => aside spawn first to evade disappear
 # NPC creation, Item creation, Item list for award on quests.
@@ -54,10 +54,8 @@ class MainWindow(Tk):
                 self.profile_name_buttons[profile.name.title()] = profile_button
 
     def create_all_items_window(self):
-        global item_names
         w = ItemsList(self, 'All Items', (500, 600), DATABASE['items'].inventory, True)
         w.wait_window()
-        item_names = [x.name for x in DATABASE['items'].inventory]
         Database.save(DATABASE)
 
     def get_new_profile_name(self):
@@ -130,11 +128,10 @@ class NewItemWindow(AskWindowSample):
     def create_item_object(self):
         if self.check_box():
             name = self.result.pop('Item name').title()
-            if name in item_names:
+            if name in DATABASE['items'].inventory:
                 showerror('Error', f'Item with name {name} already exists!')
                 return
             weight = self.result.pop('Item weight')
-            item_names.append(name)
             DATABASE['items'].put(Item(name, weight, **self.result))
 
 
@@ -282,9 +279,13 @@ class InventoryWindow(AbstractWindow, Provider):
         AbstractWindow.__init__(self, parent, f'{profile.name} Inventory', (800, 500))
         Provider.__init__(self, profile)
 
-        self.show_about = Frame(self, bg='green')
-        self.list_frame = Frame(self, bg='orange')
-        self.items = self.profile.inventory.inventory
+        self.show_about = Frame(self)
+        self.list_frame = Frame(self)
+        self.profile_items = self.profile.inventory
+        self.absolute_space = Label(self.list_frame, font=('Arial', 15, 'bold'),
+                                    text=f'Заполнено: {self.profile_items.space - self.profile_items.get_abs_space()} /'
+                                         f' {self.profile_items.space}')
+        self.absolute_space.pack(expand=1, pady=10)
         self.scroll, self.list = self.create_listbox()
         self.list_frame.pack(side=LEFT, expand=1, fill=BOTH, padx=50, pady=50)
         self.active = None
@@ -299,18 +300,34 @@ class InventoryWindow(AbstractWindow, Provider):
         add_item_list_window.wait_window()
 
         if add_item_list_window.selected_items:
-            self.items.extend([add_item_list_window.all_items[x] for x in add_item_list_window.selected_items])
-            Database.save(DATABASE)
-            self.update_listbox()
+            for item_key in add_item_list_window.selected_items:
+                if not self.weight_access_check(item_key, 1):
+                    break
+            else:
+                self.sort_item_quantify(add_item_list_window.selected_items)
+                Database.save(DATABASE)
+                self.update_listbox()
+
+    def sort_item_quantify(self, selected):
+        for item in selected:
+            self.profile_items.put(DATABASE['items'].inventory[item]['instance'])
 
     def update_listbox(self):
         self.list.destroy()
         self.scroll.destroy()
+        self.absolute_space.config(text=f'Заполнено: {self.profile_items.space - self.profile_items.get_abs_space()} /'
+                                        f' {self.profile_items.space}')
         self.scroll, self.list = self.create_listbox()
 
     def fill_list(self, li):
-        for item in self.items:
-            li.insert(END, item.name)
+        on_delete = []
+        for key in self.profile_items.inventory:
+            if key in DATABASE['items'].inventory:
+                li.insert(END, f'[x{self.profile_items.inventory[key]["quantify"]}] {key}')
+            else:
+                on_delete.append(key)
+        for k in on_delete:
+            self.profile_items.inventory.pop(k)
 
     def create_canvas(self):
         canvas = Canvas(self.show_about, relief=SOLID)
@@ -335,27 +352,69 @@ class InventoryWindow(AbstractWindow, Provider):
 
     def on_click(self):
         index = self.list.curselection()[0]
-        item = self.items[index]
+        itemname = self.list.get(index)[self.list.get(index).find(']') + 2:]
+        item = self.profile_items.inventory[itemname]['instance']
+        print(self.profile_items.inventory[itemname]['quantify'])
         if self.active is not None:
             self.active.destroy()
         self.active = self.show_info(item)
 
-    def show_info(self, item):
+    def show_info(self, item: Item):
         container = Frame(self.info)
         container.pack(expand=1, fill=BOTH)
-        Label(container, text=f'{item.name} stats', font=('Times New Roman', 15, 'bold')).pack(anchor=NW)
-        Button(container, text='Delete Item', command=lambda i=item: self.delete_item(i)).pack(anchor=NE,
+        header = Frame(container)
+        header.pack(fill=X, expand=1, anchor=N)
+        Label(header, text=f'{item.name} stats', font=('Times New Roman', 15, 'bold')).pack(side=LEFT)
+        Button(header, text='Delete Item', command=lambda i=item: self.delete_item(i)).pack(side=RIGHT,
                                                                                                padx=10, pady=10)
+        Button(header, text='Change quantify',
+               command=lambda i=item: self.create_change_quantify_window(i)).pack(side=RIGHT, pady=10)
         params_frame = Frame(container)
         params_frame.pack(expand=1, fill=BOTH)
+        self.display_row(params_frame, 'Weight', item.weight, 0)
         for n, parameter in enumerate(item.stats):
-            self.display_row(params_frame, parameter, item.stats[parameter], n)
+            self.display_row(params_frame, parameter, item.stats[parameter], n + 1)
         return container
 
-# FIX SCROLLBATS -------------------------------------------------------------------------------
-    def delete_item(self, item):
+    # change = -1
+    def change_quantify(self, txt, key, change: int):
+        if self.weight_access_check(key, change):
+            self.profile_items.inventory[key]["quantify"] += change
+        else:
+            return
+        txt.config(text=f'Total Quantify: {self.profile_items.inventory[key]["quantify"]}')
+        Database.save(DATABASE)
+
+    # change = -1
+    def weight_access_check(self, item_key, change) -> bool:
+        quantify = self.profile_items.inventory[item_key]['quantify']
+        if change < 0 and quantify + change < 0:
+            showerror('Error', 'Вещь не может иметь отрицательно кол-во')
+            return False
+        item_weight = DATABASE['items'].inventory[item_key]['instance'].weight
+        if self.profile.inventory.get_abs_space() >= change * item_weight:
+            return True
+        else:
+            print(self.profile_items.get_abs_space(), change * item_weight)
+            showerror('Error', 'Инвентарь не вмещает столько по весу!')
+            return False
+
+    def create_change_quantify_window(self, i: Item):
+        win = AbstractWindow(self, 'Change quantify', (300, 200))
+        center = Frame(win)
+        center.pack(expand=1, padx=20, pady=20)
+        text = Label(win, text=f'Total Quantify: {self.profile_items.inventory[i.name]["quantify"]}',
+                     font=('Times New Roman', 20, 'bold'))
+        for n, x in enumerate(['-100', '-10', '-1', '+1', '+10', '+100']):
+            Button(center, text=x, command=lambda r=x: self.change_quantify(text, i.name, int(r)),
+                   width=5).grid(row=0, column=n)
+        text.pack(expand=1, pady=20)
+        win.wait_window()
+        self.update_listbox()
+
+    def delete_item(self, item: Item):
         if askyesno('Verify', 'Do you really want to delete this item?'):
-            self.items.remove(item)
+            self.profile_items.inventory.pop(item.name)
             self.active.destroy()
             self.active = None
             Database.save(DATABASE)

@@ -21,27 +21,26 @@ class ItemsList(AbstractWindow):
         self.list.bind('<Double-1>', lambda event: self.on_click())
 
     def fill_list(self):
-        for item in self.items:
-            self.list.insert(END, f'[{item.name}]')
+        for itemname in self.items:
+            self.list.insert(END, f'[{itemname}]')
 
     def delete_item(self, instance, item):
         instance.destroy()
-        self.items.remove(item)
+        self.items.pop(item.name)
         self.list.destroy()
         self.scroller.destroy()
         self.create_list()
 
     def on_click(self):
         index = self.list.curselection()[0]
-        item = self.items[index]
-        ItemInfo(self, item, self.s)
+        itemname = self.list.get(index)[1:-1]
+        ItemInfo(self, self.items[itemname]['instance'], self.s)
 
 
 class ItemInfo(DisplayWindow):
     def __init__(self, parent, item: Item, switcher: bool):
         DisplayWindow.__init__(self, parent, f'Info about: {item.name}', ('auto',),
                                item.name, f'Weight: {item.weight}', True, **item.stats)
-        self.item = item
         if switcher:
             Button(self, text='Delete Item132',
-                   command=lambda: parent.delete_item(self, self.item)).pack(side=RIGHT, pady=10, padx=10, anchor=N)
+                   command=lambda: parent.delete_item(self, item)).pack(side=RIGHT, pady=10, padx=10, anchor=N)

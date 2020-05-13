@@ -105,7 +105,7 @@ class AskWindowSample(AbstractWindow):
         bag = structures.Inventory('1')
         if item_selection.selected_items:
             for item_name in item_selection.selected_items:
-                bag.put(item_selection.all_items[item_name])
+                bag.put(item_selection.all_items[item_name]['instance'])
             self.vars[pn] = {'var': bag, 'type': object}
             self.result[pn] = None
 

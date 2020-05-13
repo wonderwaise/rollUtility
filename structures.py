@@ -1,20 +1,44 @@
-from creation_abstract_class import AskWindowSample
+# abstract class
+class Item:
+    def __init__(self, name, weight: int, *changeable, **stats):
+        self.name = name
+        self.weight = weight
+        self.changeable = changeable
+        self.stats = stats
 
 
 class Inventory:
-    def __init__(self, name, space: int = 99999):
+    def __init__(self, name, space: int = 999999):
         # Название хранилища
         self.name = name
         self.space: int = space
-        self.inventory = []
+        self.inventory = {}
         self.weight = 0
 
-    def put(self, item):
+    def put(self, item: Item, quantify=1):
         if self.name == 'MAIN':
-            self.inventory.append(item)
+            self.inventory[item.name] = {
+                'instance': item,
+                'quantify': 0
+            }
             return
-        if self.weight + item.weight <= self.space:
-            self.inventory.append(item)
+        if self.weight + item.weight * quantify <= self.space:
+            try:
+                self.inventory[item.name] = {
+                    'instance': item,
+                    'quantify': self.inventory[item.name]['quantify'] + quantify
+                }
+            except KeyError:
+                self.inventory[item.name] = {
+                    'instance': item,
+                    'quantify': 1
+                }
+
+    def get_abs_space(self):
+        item_weights = 0
+        for item in self.inventory:
+            item_weights += self.inventory[item]['instance'].weight * self.inventory[item]['quantify']
+        return self.space - item_weights
 
     def get(self):
         return self.inventory
@@ -26,15 +50,6 @@ class Quest:
         self.parent = parent
         self.desc = description
         self.award = award
-
-
-# abstract class
-class Item:
-    def __init__(self, name, weight: int, *changeable, **stats):
-        self.name = name
-        self.weight = weight
-        self.changeable = changeable
-        self.stats = stats
 
 
 class Achievement:
