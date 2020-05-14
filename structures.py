@@ -1,36 +1,47 @@
+from copy import deepcopy
 # abstract class
+
+
 class Item:
     def __init__(self, name, weight: int, *changeable, **stats):
         self.name = name
         self.weight = weight
         self.changeable = changeable
         self.stats = stats
+        self.notes = ''
 
 
 class Inventory:
-    def __init__(self, name, space: int = 999999):
+    def __init__(self, name, space: int = 999999999):
         # Название хранилища
         self.name = name
         self.space: int = space
         self.inventory = {}
         self.weight = 0
 
+    def weight_access_check(self, item_instance, change) -> bool:
+        item_weight = item_instance.weight
+        if self.get_abs_space() >= change * item_weight:
+            return True
+        else:
+            return False
+
     def put(self, item: Item, quantify=1):
         if self.name == 'MAIN':
             self.inventory[item.name] = {
-                'instance': item,
+                'instance': deepcopy(item),
                 'quantify': 0
             }
             return
         if self.weight + item.weight * quantify <= self.space:
             try:
                 self.inventory[item.name] = {
-                    'instance': item,
+                    'instance': deepcopy(item),
                     'quantify': self.inventory[item.name]['quantify'] + quantify
                 }
             except KeyError:
                 self.inventory[item.name] = {
-                    'instance': item,
+                    'instance': deepcopy(item),
                     'quantify': 1
                 }
 
@@ -50,6 +61,7 @@ class Quest:
         self.parent = parent
         self.desc = description
         self.award = award
+        self.status = 1
 
 
 class Achievement:

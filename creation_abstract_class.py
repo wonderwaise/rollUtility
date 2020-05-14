@@ -32,7 +32,9 @@ class AskWindowSample(AbstractWindow):
     def create_confirm_profile_button(self):
         zone = Frame(self)
         zone.pack(side=BOTTOM, fill=X)
-        Button(zone, text="Confirm", width=25, height=2, command=self.end_process).pack(expand=1, pady=10)
+        b = Button(zone, text="Confirm", width=25, height=2, command=self.end_process)
+        b.pack(expand=1, pady=10)
+        b.bind('<Return>', lambda event: self.end_process())
 
     def create_ask_parameter_window(self):
         if self.maxparams < len(self.vars) + 1:
@@ -106,6 +108,7 @@ class AskWindowSample(AbstractWindow):
         if item_selection.selected_items:
             for item_name in item_selection.selected_items:
                 bag.put(item_selection.all_items[item_name]['instance'])
+            print(bag.get())
             self.vars[pn] = {'var': bag, 'type': object}
             self.result[pn] = None
 
@@ -121,6 +124,7 @@ class AskWindowSample(AbstractWindow):
                     showerror('Error', f'{field} has invalid value!')
                     return
             else:
+                print(self.vars[field]['var'].get())
                 showerror('Error', f'{field} has got empty value!')
                 return
         else:

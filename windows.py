@@ -209,10 +209,12 @@ class QuestsWindow(DisplayWindow, Provider):
         # side=RIGHT
         right_buttons_ = Frame(container)
         right_buttons_.pack(side=RIGHT, fill=Y)
+        # self.delete_quest_frame(q)
         delete_b = Button(right_buttons_, text='Delete Quest', width=10, command=lambda: self.delete_quest_frame(q))
         delete_b.pack(fill=Y, expand=1)
-        give_w = Button(right_buttons_, text='Give Awards', width=10)
-        give_w.pack(fill=Y, expand=1)
+        #self.give_award(q)
+        give_awards = Button(right_buttons_, text='Give Awards', width=10, command=lambda: self.give_award(q))
+        give_awards.pack(fill=Y, expand=1)
 
         quest_details_ = Frame(container)
         quest_details_.pack(fill=BOTH, expand=1)
@@ -240,14 +242,13 @@ class QuestsWindow(DisplayWindow, Provider):
         description.config(yscrollcommand=scroll_desc.set, width=450, height=100)
         scroll_desc.pack(side=RIGHT, fill=Y)
         description.pack(fill=BOTH, expand=1)
-        return quest_name, give_w, description, container
+        return quest_name, description, container
 
     def post_quests(self):
         for quest in self.profile.quests:
             if quest not in self.existing_quests:
-                quest_name, g, desc, c = self.create_quest_environment(quest)
+                quest_name, desc, c = self.create_quest_environment(quest)
                 self.existing_quests[quest] = c
-                g.config(command=1)
                 self.fill_quest_description(quest, desc)
 
     @staticmethod
@@ -260,12 +261,21 @@ class QuestsWindow(DisplayWindow, Provider):
             string = string[80:]
             canvas.create_text(10, 0 + (15 * n), text=cut, fill='black', anchor=NW)
 
-    @staticmethod
-    def give_award(awards: list):
-        if not awards:
-            pass
-        for award in awards:
-            pass
+    def give_award(self, quest):
+        print('Joined!')
+        if quest.award and quest.status:
+            print('STATUS = ON | AWARD = ON')
+            for item in quest.award:
+                print('iteration ---')
+                if self.profile.inventory.weight_access_check(quest.award[item]['instance'], 1):
+                    self.profile.inventory.put(quest.award[item]['instance'])
+                else:
+                    showerror('Error', f'{item} слишком велик по размеру и не помещается в ваш инвентарь')
+            quest.status = 0
+            Database.save(DATABASE)
+            print('SAVED = ON')
+        else:
+            showinfo('Инфо', 'Наград нет или они уже были получены раньше')
 
     def delete_quest_frame(self, quest):
         if askyesno('Verify', 'Do you really want to delete this quest?'):
@@ -301,7 +311,10 @@ class InventoryWindow(AbstractWindow, Provider):
 
         if add_item_list_window.selected_items:
             for item_key in add_item_list_window.selected_items:
-                if not self.weight_access_check(item_key, 1):
+                item = DATABASE['items'].inventory[item_key]
+                if not self.profile_items.weight_access_check(item, 1):
+                    break
+                elif not self.quantity_check(1, item_key):
                     break
             else:
                 self.sort_item_quantify(add_item_list_window.selected_items)
@@ -346,15 +359,23 @@ class InventoryWindow(AbstractWindow, Provider):
         s.pack(fill=Y, side=RIGHT)
         listbox.config(yscrollcommand=s.set)
         listbox.bind('<Double-1>', lambda event: self.on_click())
+        listbox.bind('<Button-3>', lambda event: self.redirection_to_note_window())
         listbox.pack()
         self.fill_list(listbox)
         return s, listbox
 
-    def on_click(self):
+    def redirection_to_note_window(self):
+        item = self.get_tools()
+        TextNotesWindow(self, f'{item.name}: Заметки', (600, 400), item)
+
+    def get_tools(self):
         index = self.list.curselection()[0]
         itemname = self.list.get(index)[self.list.get(index).find(']') + 2:]
         item = self.profile_items.inventory[itemname]['instance']
-        print(self.profile_items.inventory[itemname]['quantify'])
+        return item
+
+    def on_click(self):
+        item = self.get_tools()
         if self.active is not None:
             self.active.destroy()
         self.active = self.show_info(item)
@@ -378,27 +399,34 @@ class InventoryWindow(AbstractWindow, Provider):
 
     # change = -1
     def change_quantify(self, txt, key, change: int):
-        if self.weight_access_check(key, change):
-            self.profile_items.inventory[key]["quantify"] += change
+        item = DATABASE['items'].inventory[key]
+        if self.profile_items.weight_access_check(item, change):
+            if self.quantity_check(change, key):
+                self.profile_items.inventory[key]["quantify"] += change
+            else:
+                return
         else:
+            showerror('Error', 'Инвентарь не вмещает столько по весу!')
             return
-        txt.config(text=f'Total Quantify: {self.profile_items.inventory[key]["quantify"]}')
+        self.update_quantity_number(txt, key)
+
+    def update_quantity_number(self, txt, k):
+        txt.config(text=f'Total Quantify: {self.profile_items.inventory[k]["quantify"]}')
         Database.save(DATABASE)
 
-    # change = -1
-    def weight_access_check(self, item_key, change) -> bool:
-        quantify = self.profile_items.inventory[item_key]['quantify']
-        if change < 0 and quantify + change < 0:
+    # Расчитывает кол-во вещи, не может принимать ниже 1
+    def quantity_check(self, change, item_key):
+        try:
+            quantity = self.profile_items.inventory[item_key]['quantify']
+        except KeyError:
+            quantity = 0
+        print(quantity + change, quantity, change)
+        if change < 0 and quantity + change < 1:
             showerror('Error', 'Вещь не может иметь отрицательно кол-во')
             return False
-        item_weight = DATABASE['items'].inventory[item_key]['instance'].weight
-        if self.profile.inventory.get_abs_space() >= change * item_weight:
-            return True
-        else:
-            print(self.profile_items.get_abs_space(), change * item_weight)
-            showerror('Error', 'Инвентарь не вмещает столько по весу!')
-            return False
+        return True
 
+    # Расчитывает влезает ли вещь с весом item_weight в self.profile.inventory.get_abs_space()
     def create_change_quantify_window(self, i: Item):
         win = AbstractWindow(self, 'Change quantify', (300, 200))
         center = Frame(win)
@@ -425,6 +453,24 @@ class InventoryWindow(AbstractWindow, Provider):
         for num, text in enumerate([key, value]):
             Label(f, text=text, width=15, height=3,
                   font=('Times New Roman', 15, 'normal'), relief=SOLID).grid(row=row, column=num)
+
+
+class TextNotesWindow(AbstractWindow):
+    def __init__(self, parent, title, msize, item):
+        AbstractWindow.__init__(self, parent, title, msize)
+        self.item = item
+        header = Frame(self)
+        header.pack(fill=X, expand=1, anchor=N)
+
+        Button(header, text='Сохранить', command=lambda: self.save_notes()).pack(padx=10)
+
+        self.t = Text(self)
+        self.t.pack(padx=10, pady=10)
+        self.t.insert('1.0', item.notes)
+
+    def save_notes(self):
+        self.item.notes = self.t.get('1.0', END+'-1c')
+        Database.save(DATABASE)
 
 
 class AchievementsWindow(Toplevel, Provider):
