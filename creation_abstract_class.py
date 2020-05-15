@@ -26,34 +26,34 @@ class AskWindowSample(AbstractWindow):
     def create_add_parameter_button(self):
         zone = Frame(self)
         zone.pack(fill=X)
-        Button(zone, width=20, height=2, text="Add Parameter",
+        Button(zone, width=20, height=2, text="Добавить параметр",
                command=self.create_ask_parameter_window).pack(anchor=NE, padx=10, pady=10)
 
     def create_confirm_profile_button(self):
         zone = Frame(self)
         zone.pack(side=BOTTOM, fill=X)
-        b = Button(zone, text="Confirm", width=25, height=2, command=self.end_process)
+        b = Button(zone, text="Подтвердить", width=25, height=2, command=self.end_process)
         b.pack(expand=1, pady=10)
         b.bind('<Return>', lambda event: self.end_process())
 
     def create_ask_parameter_window(self):
         if self.maxparams < len(self.vars) + 1:
-            showerror('Error', 'Parameter Limit!')
+            showerror('Ошибка', 'Лимит параметр!')
             return
         self.win = Toplevel(self)
-        self.win.title('New Parameter')
+        self.win.title('Новый параметр')
         self.win.grab_set()
         var = StringVar()
         f = Frame(self.win)
         f.pack(padx=40, pady=20)
         row = Frame(f)
         row.pack()
-        Label(row, text="Parameter Name", font=("Times New Roman", 10, 'bold')).pack(side=LEFT)
+        Label(row, text="Название параметра", font=("Times New Roman", 10, 'bold')).pack(side=LEFT)
         ent = Entry(row, textvariable=var)
         ent.focus_get()
         ent.bind('<Return>', lambda event: self.check_parameter_name_value(var))
         ent.pack(side=LEFT, padx=5)
-        confirm = Button(f, text="Confirm", command=lambda: self.check_parameter_name_value(var))
+        confirm = Button(f, text="Подтвердить", command=lambda: self.check_parameter_name_value(var))
         confirm.pack(expand=1)
         confirm.bind('<Return>', lambda event: self.check_parameter_name_value(var))
 
@@ -61,15 +61,15 @@ class AskWindowSample(AbstractWindow):
         data = field.get().title()
         if data:
             if data in self.forbidden_parameters:
-                showerror('Error', 'Forbidden Parameter Name!')
+                showerror('Ошибка', 'Запрещенное название параметра!')
                 return
             elif data in self.vars:
-                showerror('Error', 'Existing parameter name')
+                showerror('Ошибка', 'Параметр с таким названием уже существует')
                 return
             self.win.destroy()
             self.create_entry_parameter_field(data, str)
         else:
-            showerror('Error', 'Invalid Parameter Name')
+            showerror('Ошибка', 'Неверное название параметра')
 
     def create_parameter_field(self, parameter_name, var, valuetype: type):
         Label(self.parameter_frame, text=parameter_name, relief=SOLID,
@@ -95,14 +95,14 @@ class AskWindowSample(AbstractWindow):
         self.create_parameter_field(parameter_name, text, str)
 
     def create_item_parameter_field(self, parameter_name, inventory):
-        Button(self.parameter_frame, width=20, height=2, text='Choose Items',
+        Button(self.parameter_frame, width=20, height=2, text='Выбрать вещи',
                font=('Arial', 15, 'normal'),
                command=lambda: self._create_item_window(parameter_name,
                                                         inventory)).grid(row=self.rows, column=1, sticky=N+S)
         self.create_parameter_field(parameter_name, structures.Inventory('1'), object)
 
     def _create_item_window(self, pn, inventory):
-        item_selection = ItemSelectionWindow(self, 'Choose Items', inventory)
+        item_selection = ItemSelectionWindow(self, 'Выберите вещи', inventory)
         item_selection.wait_window()
         bag = structures.Inventory('1')
         if item_selection.selected_items:
@@ -117,15 +117,15 @@ class AskWindowSample(AbstractWindow):
             if isinstance(self.vars[field]['var'], Text):
                 if self.vars[field]['var'].get('1.0', END+'-1c'):
                     continue
-                showerror('Error', f'{field} has empty value!')
+                showerror('Ошибка', f'{field} имеет пустое значение!')
             if self.vars[field]['var'].get():
                 right_value = self.check_type(self.vars[field]['var'].get(), self.vars[field]['type'])
                 if not right_value:
-                    showerror('Error', f'{field} has invalid value!')
+                    showerror('Error', f'{field} имеет неверный тип значения (целое число, текст и т.д)!')
                     return
             else:
                 print(self.vars[field]['var'].get())
-                showerror('Error', f'{field} has got empty value!')
+                showerror('Ошибка', f'{field} имеет пустое значение!')
                 return
         else:
             return 1

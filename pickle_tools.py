@@ -13,4 +13,4 @@ class Database:
             with open('db.pickle', 'rb') as f:
                 return load(f)
         except FileNotFoundError:
-            return []
+            return {'profiles': [], 'items': {}, 'npcs': []}

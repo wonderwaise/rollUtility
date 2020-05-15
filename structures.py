@@ -26,7 +26,7 @@ class Inventory:
         else:
             return False
 
-    def put(self, item: Item, quantify=1):
+    def put(self, item, quantify=1):
         if self.name == 'MAIN':
             self.inventory[item.name] = {
                 'instance': deepcopy(item),
@@ -56,7 +56,7 @@ class Inventory:
 
 
 class Quest:
-    def __init__(self, description: str, parent, award: list, name=None, **kwargs):
+    def __init__(self, description: str, parent, award: list, name=None):
         self.name = name
         self.parent = parent
         self.desc = description
@@ -71,11 +71,10 @@ class Achievement:
 
 
 class Profile:
-    def __init__(self, name, inventory: Inventory, abcventory: Inventory, **stats):
+    def __init__(self, name, inventory: Inventory, **stats):
         self.name = name
         self.stats = stats
         self.inventory = inventory
-        self.abcventory = abcventory
         self.quests = []
         self.achievements = []
 
@@ -87,10 +86,8 @@ class Profile:
             for key in anotherstats:
                 self.stats[key] = anotherstats[key]
 
-    # REWORK ++++++++ FOR LOOP IN
-
     def add_achieve(self, achievement: Achievement):
-        self.quests.append(achievement)
+        self.achievements.append(achievement)
 
 
 class NotPlayerCharacter:
@@ -103,7 +100,3 @@ class NotPlayerCharacter:
 
     def get_stats(self):
         return {'Name': self.name, 'Race': self.race, 'Home': self.home, 'Occupation': self.occupation}
-
-    @staticmethod
-    def update_avatar():
-        print('NOT IMPLEMENTED')
