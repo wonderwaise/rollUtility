@@ -39,11 +39,26 @@ class Inventory:
                     'instance': deepcopy(item),
                     'quantify': self.inventory[item.name]['quantify'] + quantify
                 }
+                self.recalculate_weight()
             except KeyError:
                 self.inventory[item.name] = {
                     'instance': deepcopy(item),
                     'quantify': 1
                 }
+                self.recalculate_weight()
+
+    def _find_inventories(self):
+        for inv in self.inventory.values():
+            if isinstance(inv["instance"], Inventory):
+                inv["instance"].recalculate_weight()
+
+    def recalculate_weight(self):
+        self._find_inventories()
+        new_weight: int = 0
+        for key, value in self.inventory.items():
+            for _ in range(self.inventory[key]['quantify']):
+                new_weight += value["instance"].weight
+        self.weight = new_weight
 
     def get_abs_space(self):
         item_weights = 0
@@ -99,4 +114,4 @@ class NotPlayerCharacter:
         self.avatar = None
 
     def get_stats(self):
-        return {'Name': self.name, 'Race': self.race, 'Home': self.home, 'Occupation': self.occupation}
+        return {'Имя': self.name, 'Раса': self.race, 'Где обитает': self.home, 'Чем занимается': self.occupation}

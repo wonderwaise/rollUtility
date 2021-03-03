@@ -1,4 +1,5 @@
 from pickle import dump, load
+import structures as s
 
 
 class Database:
@@ -13,4 +14,4 @@ class Database:
             with open('db.pickle', 'rb') as f:
                 return load(f)
         except FileNotFoundError:
-            return {'profiles': [], 'items': {}, 'npcs': []}
+            return {'profiles': [], 'items': s.Inventory("MAIN"), 'npcs': []}

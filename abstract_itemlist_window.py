@@ -115,5 +115,5 @@ class NewInventoryWindow(AskWindowSample):
             if name in inv.inventory:
                 showerror('Ошибка', f'Вещь с названием {name} уже существует')
                 return
-            space = self.result.pop('Space')
+            space = self.result.pop('Объем')
             inv.put(Inventory(name, space))

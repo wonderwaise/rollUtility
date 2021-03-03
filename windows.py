@@ -11,20 +11,16 @@ from item_seletion_window import ItemSelectionWindow
 DATABASE = Database.load()
 profile_names = [x.name for x in DATABASE['profiles']]
 npc_by_names = {x.name: x for x in DATABASE['npcs']}
-# Profile window class >>> remake field spawning => aside spawn first to evade disappear
-# NPC creation, Item creation, Item list for award on quests.
-# механизм если NPC удален а квест который он выдал остался.
 
 
 # --------------------------------------------------------
 class MainWindow(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.title('BackPack by wonder [v.0.0.1]')
+        self.title('BackPack by wonder [v.0.0.2]')
         self.geometry('800x600')
         self.maxsize(1000, 600)
-        # Existing profile buttons in main window
-        self.profile_name_buttons = {}
+        self.profile_name_buttons = dict()
 
         canvas = Canvas(self, width=650)
         sbar = Scrollbar(self, command=canvas.yview)
@@ -249,7 +245,7 @@ class QuestsWindow(DisplayWindow):
 
 class InventoryWindow(AbstractWindow):
     def __init__(self, parent, inventory: Inventory, title='Общий инвентарь'):
-        AbstractWindow.__init__(self, parent, title, (800, 500))
+        AbstractWindow.__init__(self, parent, title, (1000, 500))
         self.show_about = Frame(self)
         self.list_frame = Frame(self)
         self.profile_items = inventory
@@ -287,6 +283,7 @@ class InventoryWindow(AbstractWindow):
             self.profile_items.put(DATABASE['items'].inventory[item]['instance'])
 
     def update_listbox(self):
+        self.profile_items.recalculate_weight()
         self.list.destroy()
         self.scroll.destroy()
         self.absolute_space.config(text=f'Заполнено: {self.profile_items.space - self.profile_items.get_abs_space()} /'
@@ -346,7 +343,7 @@ class InventoryWindow(AbstractWindow):
         container.pack(expand=1, fill=BOTH)
         header = Frame(container)
         header.pack(fill=X, expand=1, anchor=N)
-        Label(header, text=f'{item.name} stats', font=('Times New Roman', 15, 'bold')).pack(side=LEFT)
+        Label(header, text=f'{item.name} параметры', font=('Times New Roman', 15, 'bold')).pack(side=LEFT)
         Button(header, text='Удалить вещь', command=lambda i=item: self.delete_item(i)).pack(side=RIGHT,
                                                                                              padx=10, pady=10)
         if isinstance(item, Inventory):
@@ -363,7 +360,6 @@ class InventoryWindow(AbstractWindow):
             self.display_row(params_frame, parameter, item.stats[parameter], n + 1)
         return container
 
-    # change = -1
     def change_quantify(self, txt, key, change: int):
         item = DATABASE['items'].inventory[key]['instance']
         if self.profile_items.weight_access_check(item, change):
@@ -386,14 +382,13 @@ class InventoryWindow(AbstractWindow):
             quantity = self.profile_items.inventory[item_key]['quantify']
         except KeyError:
             quantity = 0
-        print(quantity + change, quantity, change)
         if change < 0 and quantity + change < 1:
             showerror('Ошибка', 'Вещь не может иметь отрицательно кол-во')
             return False
         return True
 
     def create_change_quantify_window(self, i: Item):
-        win = AbstractWindow(self, 'Изменить кол-во', (300, 200))
+        win = AbstractWindow(self, 'Изменить кол-во', (350, 200))
         center = Frame(win)
         center.pack(expand=1, padx=20, pady=20)
         text = Label(win, text=f'Текущее кол-во: {self.profile_items.inventory[i.name]["quantify"]}',
@@ -521,7 +516,7 @@ class NotPlayerCharactersWindow(DisplayWindow):
             if character.name not in self.buttons:
                 npc_button = Button(self.frame_inside, text=character.name, width=15,
                                     font=('Times New Roman', 30, 'bold'),
-                                    command=lambda i=character: NPCWindow(self, i, (500, 700), True), relief=SOLID)
+                                    command=lambda i=character: NPCWindow(self, i, (600, 700), True), relief=SOLID)
                 npc_button.pack(pady=10, padx=10, expand=1, fill=X)
                 self.buttons[character.name] = npc_button
 
@@ -560,7 +555,6 @@ class NotPlayerCharactersWindow(DisplayWindow):
 
 class NPCWindow(DisplayWindow):
     def __init__(self, parent, npc_object, msize, rootpermissions: bool):
-        print(type(npc_object))
         DisplayWindow.__init__(self, parent, f'НИП: {npc_object.name}', msize, npc_object.name,
                                'Профиль НИПа', True, **npc_object.get_stats())
 
